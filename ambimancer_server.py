@@ -1,6 +1,26 @@
 import threading
 import socket
-import time
+import npyscreen as nps
+import os
+
+class Soundscape():
+    name = ""
+
+    music = {} # track_path | id
+    music_vol = {} # id | volume
+
+    ambient = {} # track_path | id
+    ambient_vol = {} # id | volume
+    ambient_prob = {} # id | propability
+
+    def __init__(self, name):
+        self.name = name
+
+    def add_music(track_orig_path):
+
+
+
+PACKET_SIZE = 1024
 
 host = '192.168.178.28'
 port = 30000
@@ -12,34 +32,43 @@ server.listen()
 clients = []
 uids = []
 
+soundscapes = []
+
+try:
+    os.mkdir("./soundfiles")
+except:
+    pass
+
 def cmd_broadcast(cmd):
+    buffrd_cmd =("CMD@" + cmd).encode() + bytes(PACKET_SIZE - len(cmd) - 4)
     for client in clients:
-        client.send(("CMD@" + cmd).encode())
+        client.send(buffrd_cmd)
 
 def cmd_send(client, cmd):
-    client.send(("CMD@" + cmd).encode())
+    buffrd_cmd =("CMD@" + cmd).encode() + bytes(PACKET_SIZE - len(cmd) - 4)
+    client.send(buffrd_cmd)
 
 def trnsf_music(file):
-    print("trnsf clients: ".join(str(e) for e in clients))
+    print(len(clients))
     cmd_broadcast("trnsfbegin_newfile_mp3")
-    packet = file.read(1020)
-    packet = "TRN@".encode() + packet
+    packet = file.read(PACKET_SIZE - 4)
     sentsize = 0
     while(packet):
+        packet = "TRN@".encode() + packet
+        packet = packet + bytes(PACKET_SIZE - len(packet)) # Make sure even the last packet
+                                                    # is PACKET_SIZE in size.
         for client in clients:
             client.send(packet)
-        print(f"sent: {packet}")
-        time.sleep(0.05)
-        sentsize += 1020
-        packet = file.read(1020)
-        packet = "TRN@".encode() + packet
+        sentsize += PACKET_SIZE - 4 # Leave 4 bytes space for the target-prefix
+        packet = file.read(PACKET_SIZE - 4)
+    cmd_broadcast("trnsfend")
     print("file sent! " + str(sentsize))
 
 def handle(client):
     while True:
         try:
-            message = client.recv(1024)
-            #print(message.decode())
+            message = client.recv(PACKET_SIZE)
+            print(message.decode())
         except:
             index = clients.index(client)
             clients.remove(client)
@@ -54,7 +83,7 @@ def receive():
         client, adress = server.accept()
         print(f"{str(adress)} has connected.")
         cmd_send(client, "uid")
-        uid = client.recv(1024).decode()
+        uid = client.recv(PACKET_SIZE).decode()
         uids.append(uid)
         clients.append(client)
         print(f"Nickname for client is {uid}!")
@@ -62,10 +91,28 @@ def receive():
         thread = threading.Thread(target=handle, args=(client,))
         thread.start()
 
-receive_thread = threading.Thread(target=receive)
-receive_thread.start()
-time.sleep(6)
-print("done waiting")
+#tosend = open("tosendfile.mp3", "rb")
+#trnsf_music(tosend)
 
-tosend = open("tosendfile.mp3", "rb")
-trnsf_music(tosend)
+def run_gui(*argv):
+    soundscapes_names = []
+    for i in range(100):
+        soundscapes_names.append(f"yeet nigga {i}")
+
+    form = nps.Form(name="Ambimancer - Server")
+    wid_soundscapes = form.add(nps.TitleSelectOne,
+            max_height=None,
+            value = [1,],
+            name="Scapes:",
+            values = soundscapes_names,
+            scroll_exit=True)
+
+    #t = nps.selectFile("~/")
+    #nps.notify_confirm(title="Selfile", message=t)
+    form.edit()
+
+if (__name__ == "__main__"):
+    receive_thread = threading.Thread(target=receive)
+    receive_thread.start()
+
+    nps.wrapper_basic(run_gui)
