@@ -1,7 +1,11 @@
 import threading
 import socket
-import npyscreen as nps
 import os
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+import vlc
+import time
 
 class Soundscape():
     name = ""
@@ -17,7 +21,7 @@ class Soundscape():
         self.name = name
 
     def add_music(track_orig_path):
-
+        pass
 
 
 PACKET_SIZE = 1024
@@ -33,6 +37,7 @@ clients = []
 uids = []
 
 soundscapes = []
+
 
 try:
     os.mkdir("./soundfiles")
@@ -95,24 +100,176 @@ def receive():
 #trnsf_music(tosend)
 
 def run_gui(*argv):
-    soundscapes_names = []
-    for i in range(100):
-        soundscapes_names.append(f"yeet nigga {i}")
+    #### CONSTRUCT BASIC FRAME AND TABS ####
+    root = Tk()
+    root.title("Ambimancer - Server")
+    root.geometry("1280x720")
+    myLabel = Label(root, text="Ambimancer - Server")
+    myLabel.pack()
 
-    form = nps.Form(name="Ambimancer - Server")
-    wid_soundscapes = form.add(nps.TitleSelectOne,
-            max_height=None,
-            value = [1,],
-            name="Scapes:",
-            values = soundscapes_names,
-            scroll_exit=True)
+    tab_container = ttk.Notebook(root)
+    tab_main = ttk.Frame(tab_container)
+    tab_edit_create = ttk.Frame(tab_container)
+    tab_files = ttk.Frame(tab_container)
 
-    #t = nps.selectFile("~/")
-    #nps.notify_confirm(title="Selfile", message=t)
-    form.edit()
+    tab_container.add(tab_main, text="Main")
+    tab_container.add(tab_edit_create, text="Edit/Create")
+    tab_container.add(tab_files, text="Files")
+
+    tab_container.pack(expand=1, fill="both")
+
+    #### CONSTRUCT FILES TAB ####
+    folders = os.listdir("soundfiles")
+    folders_list = StringVar(value=folders)
+    folders_listbox = tk.Listbox(tab_files,
+            exportselection=False,
+            listvariable=folders_list,
+            height=50,
+            width=36)
+    folders_listbox.grid(column=0, row=0, sticky="nwes")
+    folders_scroll = tk.Scrollbar(tab_files)
+
+    preview_inst = vlc.Instance()
+    preview_player = vlc.MediaPlayer()
+
+    def folder_selected(event):
+        folders_selection_index = folders_listbox.curselection()
+        if(not folders_selection_index == ""):
+            folders_selection = folders_listbox.get(folders_selection_index)
+
+        allfiles = os.listdir(f"soundfiles/{folders_selection}")
+        audiofiles = []
+        for file in allfiles:
+            if(file.endswith(".mp3")):
+                audiofiles.append(file)
+        audiofiles.sort()
+        allfiles.clear()
+
+        def file_selected(event):
+            if(preview_player.is_playing()):
+                preview_player.stop()
+            files_selection_index = files_listbox.curselection()
+            if(not files_selection_index == ""):
+                files_selection = files_listbox.get(files_selection_index)
+            fileinfo_text = tk.Text(tab_files, height=2, width=50)
+            fileinfo_text.insert(INSERT, f"{folders_selection}:\n{files_selection}")
+            fileinfo_text.grid(column=2, row=0, sticky="n")
+            selectedpath = f"soundfiles/{folders_selection}/{files_selection}"
+
+            restart_keeptrack = True
+
+            time_slider = tk.Scale(tab_files,
+                    from_=0, to=100,
+                    orient=HORIZONTAL,
+                    length=220)
+            time_slider.grid(column=2, row=0, sticky="n", pady=80)
+
+            # This controls the progress bar
+            def keeptrack():
+                restart_keeptrack = False
+                while preview_player.get_length() == 0:
+                    time.sleep(0.1)
+                progress = 0
+                 # this is to stop the when track changes
+                while progress < 100 and restart_keeptrack == False:
+                    progress = preview_player.get_time() / preview_player.get_length()
+                    progress *= 100
+                    time_slider.set(progress)
+
+            def pressed_button_listen():
+                if(selectedpath == ""):
+                    pass
+                else:
+                    preview_media = preview_inst.media_new(selectedpath)
+                    preview_player.set_media(preview_media)
+                    preview_player.play()
+                    t = threading.Thread(target=keeptrack)
+                    t.daemon = True
+                    t.start()
+
+            def pressed_button_stop():
+                if(selectedpath == ""):
+                    pass
+                else:
+                    if(preview_player.is_playing()):
+                        restart_keeptrack = True
+                        preview_player.stop()
+
+            def pressed_button_fwd():
+                if(selectedpath == ""):
+                    pass
+                else:
+                    curtime = preview_player.get_time()
+                    if(curtime + 10000 <= preview_player.get_length()):
+                        preview_player.set_time(preview_player.get_time() + 10000)
+                    else:
+                        preview_player.set_time(preview_player.get_length())
+
+            def pressed_button_bck():
+                if(selectedpath == ""):
+                    pass
+                else:
+                    curtime = preview_player.get_time()
+                    if(curtime - 10000 >= 0):
+                        preview_player.set_time(preview_player.get_time() - 10000)
+                    else:
+                        preview_player.set_time(0)
+
+
+            button_listen = tk.Button(tab_files,
+                    text="Listen",
+                    command=pressed_button_listen)
+            button_listen.grid(column=2, row=0, sticky="nw", pady=48, padx=50)
+
+            button_stop = tk.Button(tab_files,
+                    text="Stop",
+                    command=pressed_button_stop)
+            button_stop.grid(column=2, row=0, sticky="ne", pady=48, padx=50)
+
+            button_fwd = tk.Button(tab_files,
+                    text="+>>",
+                    command=pressed_button_fwd)
+            button_fwd.grid(column=2, row=0, sticky="ne", pady=128, padx=50)
+
+            button_bck = tk.Button(tab_files,
+                    text="<<-",
+                    command=pressed_button_bck)
+            button_bck.grid(column=2, row=0, sticky="nw", pady=128, padx=50)
+
+        files_list = StringVar(value=audiofiles)
+        files_listbox = tk.Listbox(tab_files,
+                exportselection=False,
+                listvariable=files_list,
+                height=50,
+                width=36)
+        files_listbox.grid(column=1,row=0, sticky="nwse")
+        files_listbox.bind('<<ListboxSelect>>', file_selected)
+
+    folders_listbox.bind('<<ListboxSelect>>', folder_selected)
+
+    tab_files.grid_columnconfigure(0,weight=1)
+    tab_files.grid_columnconfigure(1,weight=1)
+    tab_files.grid_columnconfigure(2,weight=1)
+    tab_files.grid_columnconfigure(3,weight=1)
+    tab_files.grid_columnconfigure(4,weight=1)
+    tab_files.grid_rowconfigure(0,weight=1)
+    tab_files.grid_rowconfigure(1,weight=1)
+    tab_files.grid_rowconfigure(2,weight=1)
+    tab_files.grid_rowconfigure(3,weight=1)
+    tab_files.grid_rowconfigure(4,weight=1)
+
+    root.mainloop()
+    print("terminated")
 
 if (__name__ == "__main__"):
-    receive_thread = threading.Thread(target=receive)
-    receive_thread.start()
+    #receive_thread = threading.Thread(target=receive)
+    #receive_thread.daemon = True
+    #receive_thread.start()
 
-    nps.wrapper_basic(run_gui)
+    run_gui()
+
+    print("The following threads were still running, are they daemons?")
+    for th in threading.enumerate():
+        if(th.name == "MainThread"):
+            continue
+        print(f"{th.name} :: {th.isDaemon()}")
