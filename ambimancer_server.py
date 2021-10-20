@@ -7,15 +7,16 @@ from tkinter import ttk
 import vlc
 import time
 
+
 class Soundscape():
     name = ""
 
-    music = {} # track_path | id
-    music_vol = {} # id | volume
+    music = {}  # track_path | id
+    music_vol = {}  # id | volume
 
-    ambient = {} # track_path | id
-    ambient_vol = {} # id | volume
-    ambient_prob = {} # id | propability
+    ambient = {}  # track_path | id
+    ambient_vol = {}  # id | volume
+    ambient_prob = {}  # id | propability
 
     def __init__(self, name):
         self.name = name
@@ -44,14 +45,17 @@ try:
 except:
     pass
 
+
 def cmd_broadcast(cmd):
     buffrd_cmd =("CMD@" + cmd).encode() + bytes(PACKET_SIZE - len(cmd) - 4)
     for client in clients:
         client.send(buffrd_cmd)
 
+
 def cmd_send(client, cmd):
     buffrd_cmd =("CMD@" + cmd).encode() + bytes(PACKET_SIZE - len(cmd) - 4)
     client.send(buffrd_cmd)
+
 
 def trnsf_music(file):
     print(len(clients))
@@ -60,14 +64,16 @@ def trnsf_music(file):
     sentsize = 0
     while(packet):
         packet = "TRN@".encode() + packet
-        packet = packet + bytes(PACKET_SIZE - len(packet)) # Make sure even the last packet
-                                                    # is PACKET_SIZE in size.
+        packet = packet + bytes(PACKET_SIZE - len(packet))  # Make sure even
+        # the last packet
+        # is PACKET_SIZE in size.
         for client in clients:
             client.send(packet)
-        sentsize += PACKET_SIZE - 4 # Leave 4 bytes space for the target-prefix
+        sentsize += PACKET_SIZE - 4  # Leave 4 bytes space for the target-prefix
         packet = file.read(PACKET_SIZE - 4)
     cmd_broadcast("trnsfend")
     print("file sent! " + str(sentsize))
+
 
 def handle(client):
     while True:
@@ -82,6 +88,7 @@ def handle(client):
             cmd_broadcast(f'{uid} left.')
             uids.remove(uid)
             break
+
 
 def receive():
     while True:
@@ -99,8 +106,9 @@ def receive():
 #tosend = open("tosendfile.mp3", "rb")
 #trnsf_music(tosend)
 
+
 def run_gui(*argv):
-    #### CONSTRUCT BASIC FRAME AND TABS ####
+     #### CONSTRUCT BASIC FRAME AND TABS  ####
     root = Tk()
     root.title("Ambimancer - Server")
     root.geometry("1280x720")
@@ -118,7 +126,7 @@ def run_gui(*argv):
 
     tab_container.pack(expand=1, fill="both")
 
-    #### CONSTRUCT FILES TAB ####
+     #### CONSTRUCT FILES TAB  ####
     folders = os.listdir("soundfiles")
     folders_list = StringVar(value=folders)
     folders_listbox = tk.Listbox(tab_files,
@@ -164,13 +172,13 @@ def run_gui(*argv):
                     length=220)
             time_slider.grid(column=2, row=0, sticky="n", pady=80)
 
-            # This controls the progress bar
+             # This controls the progress bar
             def keeptrack():
                 restart_keeptrack = False
                 while preview_player.get_length() == 0:
                     time.sleep(0.1)
                 progress = 0
-                 # this is to stop the when track changes
+                  # this is to stop the when track changes
                 while progress < 100 and restart_keeptrack == False:
                     progress = preview_player.get_time() / preview_player.get_length()
                     progress *= 100
@@ -247,9 +255,9 @@ def run_gui(*argv):
 
     folders_listbox.bind('<<ListboxSelect>>', folder_selected)
 
-    tab_files.grid_columnconfigure(0,weight=1)
-    tab_files.grid_columnconfigure(1,weight=1)
-    tab_files.grid_columnconfigure(2,weight=1)
+    tab_files.grid_columnconfigure(0, weight=1)
+    tab_files.grid_columnconfigure(1, weight=1)
+    tab_files.grid_columnconfigure(2, weight=1)
     tab_files.grid_columnconfigure(3,weight=1)
     tab_files.grid_columnconfigure(4,weight=1)
     tab_files.grid_rowconfigure(0,weight=1)
@@ -260,6 +268,7 @@ def run_gui(*argv):
 
     root.mainloop()
     print("terminated")
+
 
 if (__name__ == "__main__"):
     #receive_thread = threading.Thread(target=receive)
