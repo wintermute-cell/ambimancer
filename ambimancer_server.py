@@ -39,7 +39,6 @@ uids = []
 
 soundscapes = []
 
-
 try:
     os.mkdir("./soundfiles")
 except:
@@ -248,9 +247,113 @@ def guitab_files(tab_files):
 
 def guitab_main(tab_main):
     # TODO: plan and implement main tab
+    pass
+
+
+def guitab_edit_create(tab_edit_create):
+    # Create Folder list
+    folders = os.listdir("soundfiles")
+    folders_list = tk.StringVar(value=folders)
+    folders_listbox = tk.Listbox(tab_edit_create,
+                                 exportselection=False,
+                                 listvariable=folders_list,
+                                 height=50,
+                                 width=36)
+    folders_listbox.grid(column=0, row=0, sticky="nwes")
+    folders_scroll = tk.Scrollbar(tab_edit_create)
+
+    # Precreate an the empty file list.
+    audiofiles = []
+    # If there are folders, open the first one
+    if(len(folders) > 0):
+        folders_selection = folders_listbox.get(0)
+        allfiles = os.listdir(f"soundfiles/{folders_selection}")
+        audiofiles = []
+        for file in allfiles:
+            if(file.endswith(".mp3")):
+                audiofiles.append(file)
+        audiofiles.sort()
+        allfiles.clear()
+    files_list = tk.StringVar(value=audiofiles)
+    files_listbox = tk.Listbox(tab_edit_create,
+                               selectmode="multiple",
+                               exportselection=False,
+                               listvariable=files_list,
+                               height=50,
+                               width=36)
+    files_listbox.grid(column=1, row=0, sticky="nwse")
+
+    # Create control elements on the right
+    # Dropdown
+    soundscape_names = ["---"]
+    for soundscape in soundscapes:
+        soundscape_names.append(soundscape.name)
+    soundscape_droplist = tk.StringVar(value=soundscape_names)
+    if(len(soundscapes) > 0):
+        soundscape_droplist.set(soundscapes[0].name)
+    else:
+        soundscape_droplist.set("---")
+
+    soundscape_drop = tk.OptionMenu(
+        tab_edit_create,
+        soundscape_droplist,
+        *soundscape_names)
+    soundscape_drop.grid(column=2, row=0, sticky="nwe")
+
+    def pressed_button_stop():
+        if(selectedpath == ""):
+            pass
+        else:
+            if(preview_player.is_playing()):
+                restart_keeptrack = True
+                preview_player.stop()
+    button_stop = tk.Button(tab_edit_create,
+                            text="Stop",
+                            command=pressed_button_stop)
+    button_stop.grid(column=2, row=0, sticky="ne", pady=48, padx=50)
+
+    def folder_selected(event):
+        folders_selection_index = folders_listbox.curselection()
+        if(not folders_selection_index == ""):
+            folders_selection = folders_listbox.get(folders_selection_index)
+
+        # Fetch all filenames from the folder, clear the file list, and then add
+        # all the new files to the file list
+        allfiles = os.listdir(f"soundfiles/{folders_selection}")
+        audiofiles = []
+        for file in allfiles:
+            if(file.endswith(".mp3")):
+                audiofiles.append(file)
+        audiofiles.sort()
+        allfiles.clear()
+        files_listbox.delete(0, tk.END)
+        for file in audiofiles:
+            files_listbox.insert(tk.END, file)
+
+        def file_selected(event):
+            files_selection_index = files_listbox.curselection()
+            if(not files_selection_index == ""):
+                files_selection = files_listbox.get(files_selection_index)
+            selectedpath = f"soundfiles/{folders_selection}/{files_selection}"
+
+        files_listbox.bind('<<ListboxSelect>>', file_selected)
+
+    folders_listbox.bind('<<ListboxSelect>>', folder_selected)
+
+    tab_edit_create.grid_columnconfigure(0, weight=1)
+    tab_edit_create.grid_columnconfigure(1, weight=1)
+    tab_edit_create.grid_columnconfigure(2, weight=1)
+    tab_edit_create.grid_columnconfigure(3, weight=1)
+    tab_edit_create.grid_columnconfigure(4, weight=1)
+    tab_edit_create.grid_rowconfigure(0, weight=1)
+    tab_edit_create.grid_rowconfigure(1, weight=1)
+    tab_edit_create.grid_rowconfigure(2, weight=1)
+    tab_edit_create.grid_rowconfigure(3, weight=1)
+    tab_edit_create.grid_rowconfigure(4, weight=1)
+
 
 def run_gui(*argv):
-    #### CONSTRUCT BASIC FRAME AND TABS  ####
+    # CONSTRUCT BASIC FRAME AND TABS
     root = tk.Tk()
     root.title("Ambimancer - Server")
     root.geometry("1280x720")
@@ -274,6 +377,9 @@ def run_gui(*argv):
     # CONSTRUCT MAIN TAB
     guitab_main(tab_main)
 
+    # CONSTRUCT EDIT/CREATE TAB
+    guitab_edit_create(tab_edit_create)
+
     root.mainloop()
     print("terminated")
 
@@ -285,8 +391,9 @@ if (__name__ == "__main__"):
 
     run_gui()
 
-    print("The following threads were still running, are they daemons?")
-    for th in threading.enumerate():
-        if(th.name == "MainThread"):
-            continue
-        print(f"{th.name} :: {th.isDaemon()}")
+    if(len(threading.enumerate()) > 1): # if more threads than just main thread
+        print("The following threads were still running, are they daemons?")
+        for th in threading.enumerate():
+            if(th.name == "MainThread"):
+                continue
+            print(f"{th.name} :: {th.isDaemon()}")
