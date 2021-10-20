@@ -106,34 +106,14 @@ def receive():
 #tosend = open("tosendfile.mp3", "rb")
 #trnsf_music(tosend)
 
-
-def run_gui(*argv):
-     #### CONSTRUCT BASIC FRAME AND TABS  ####
-    root = Tk()
-    root.title("Ambimancer - Server")
-    root.geometry("1280x720")
-    myLabel = Label(root, text="Ambimancer - Server")
-    myLabel.pack()
-
-    tab_container = ttk.Notebook(root)
-    tab_main = ttk.Frame(tab_container)
-    tab_edit_create = ttk.Frame(tab_container)
-    tab_files = ttk.Frame(tab_container)
-
-    tab_container.add(tab_main, text="Main")
-    tab_container.add(tab_edit_create, text="Edit/Create")
-    tab_container.add(tab_files, text="Files")
-
-    tab_container.pack(expand=1, fill="both")
-
-     #### CONSTRUCT FILES TAB  ####
+def guitab_files(tab_files):
     folders = os.listdir("soundfiles")
-    folders_list = StringVar(value=folders)
+    folders_list = tk.StringVar(value=folders)
     folders_listbox = tk.Listbox(tab_files,
-            exportselection=False,
-            listvariable=folders_list,
-            height=50,
-            width=36)
+                                 exportselection=False,
+                                 listvariable=folders_list,
+                                 height=50,
+                                 width=36)
     folders_listbox.grid(column=0, row=0, sticky="nwes")
     folders_scroll = tk.Scrollbar(tab_files)
 
@@ -167,18 +147,18 @@ def run_gui(*argv):
             restart_keeptrack = True
 
             time_slider = tk.Scale(tab_files,
-                    from_=0, to=100,
-                    orient=HORIZONTAL,
-                    length=220)
+                                   from_=0, to=100,
+                                   orient=tk.HORIZONTAL,
+                                   length=220)
             time_slider.grid(column=2, row=0, sticky="n", pady=80)
 
-             # This controls the progress bar
+            # This controls the progress bar
             def keeptrack():
                 restart_keeptrack = False
                 while preview_player.get_length() == 0:
                     time.sleep(0.1)
                 progress = 0
-                  # this is to stop the when track changes
+                # this is to stop the when track changes
                 while progress < 100 and restart_keeptrack == False:
                     progress = preview_player.get_time() / preview_player.get_length()
                     progress *= 100
@@ -223,34 +203,33 @@ def run_gui(*argv):
                     else:
                         preview_player.set_time(0)
 
-
             button_listen = tk.Button(tab_files,
-                    text="Listen",
-                    command=pressed_button_listen)
+                                      text="Listen",
+                                      command=pressed_button_listen)
             button_listen.grid(column=2, row=0, sticky="nw", pady=48, padx=50)
 
             button_stop = tk.Button(tab_files,
-                    text="Stop",
-                    command=pressed_button_stop)
+                                    text="Stop",
+                                    command=pressed_button_stop)
             button_stop.grid(column=2, row=0, sticky="ne", pady=48, padx=50)
 
             button_fwd = tk.Button(tab_files,
-                    text="+>>",
-                    command=pressed_button_fwd)
+                                   text="+>>",
+                                   command=pressed_button_fwd)
             button_fwd.grid(column=2, row=0, sticky="ne", pady=128, padx=50)
 
             button_bck = tk.Button(tab_files,
-                    text="<<-",
-                    command=pressed_button_bck)
+                                   text="<<-",
+                                   command=pressed_button_bck)
             button_bck.grid(column=2, row=0, sticky="nw", pady=128, padx=50)
 
-        files_list = StringVar(value=audiofiles)
+        files_list = tk.StringVar(value=audiofiles)
         files_listbox = tk.Listbox(tab_files,
-                exportselection=False,
-                listvariable=files_list,
-                height=50,
-                width=36)
-        files_listbox.grid(column=1,row=0, sticky="nwse")
+                                   exportselection=False,
+                                   listvariable=files_list,
+                                   height=50,
+                                   width=36)
+        files_listbox.grid(column=1, row=0, sticky="nwse")
         files_listbox.bind('<<ListboxSelect>>', file_selected)
 
     folders_listbox.bind('<<ListboxSelect>>', folder_selected)
@@ -258,13 +237,42 @@ def run_gui(*argv):
     tab_files.grid_columnconfigure(0, weight=1)
     tab_files.grid_columnconfigure(1, weight=1)
     tab_files.grid_columnconfigure(2, weight=1)
-    tab_files.grid_columnconfigure(3,weight=1)
-    tab_files.grid_columnconfigure(4,weight=1)
-    tab_files.grid_rowconfigure(0,weight=1)
-    tab_files.grid_rowconfigure(1,weight=1)
-    tab_files.grid_rowconfigure(2,weight=1)
-    tab_files.grid_rowconfigure(3,weight=1)
-    tab_files.grid_rowconfigure(4,weight=1)
+    tab_files.grid_columnconfigure(3, weight=1)
+    tab_files.grid_columnconfigure(4, weight=1)
+    tab_files.grid_rowconfigure(0, weight=1)
+    tab_files.grid_rowconfigure(1, weight=1)
+    tab_files.grid_rowconfigure(2, weight=1)
+    tab_files.grid_rowconfigure(3, weight=1)
+    tab_files.grid_rowconfigure(4, weight=1)
+
+
+def guitab_main(tab_main):
+    # TODO: plan and implement main tab
+
+def run_gui(*argv):
+    #### CONSTRUCT BASIC FRAME AND TABS  ####
+    root = tk.Tk()
+    root.title("Ambimancer - Server")
+    root.geometry("1280x720")
+    myLabel = tk.Label(root, text="Ambimancer - Server")
+    myLabel.pack()
+
+    tab_container = ttk.Notebook(root)
+    tab_main = ttk.Frame(tab_container)
+    tab_edit_create = ttk.Frame(tab_container)
+    tab_files = ttk.Frame(tab_container)
+
+    tab_container.add(tab_main, text="Main")
+    tab_container.add(tab_edit_create, text="Edit/Create")
+    tab_container.add(tab_files, text="Files")
+
+    tab_container.pack(expand=1, fill="both")
+
+    # CONSTRUCT FILES TAB
+    guitab_files(tab_files)
+
+    # CONSTRUCT MAIN TAB
+    guitab_main(tab_main)
 
     root.mainloop()
     print("terminated")
