@@ -41,18 +41,18 @@ soundscapes = []
 
 try:
     os.mkdir("./soundfiles")
-except:
+except Exception:
     pass
 
 
 def cmd_broadcast(cmd):
-    buffrd_cmd =("CMD@" + cmd).encode() + bytes(PACKET_SIZE - len(cmd) - 4)
+    buffrd_cmd = ("CMD@" + cmd).encode() + bytes(PACKET_SIZE - len(cmd) - 4)
     for client in clients:
         client.send(buffrd_cmd)
 
 
 def cmd_send(client, cmd):
-    buffrd_cmd =("CMD@" + cmd).encode() + bytes(PACKET_SIZE - len(cmd) - 4)
+    buffrd_cmd = ("CMD@" + cmd).encode() + bytes(PACKET_SIZE - len(cmd) - 4)
     client.send(buffrd_cmd)
 
 
@@ -68,7 +68,7 @@ def trnsf_music(file):
         # is PACKET_SIZE in size.
         for client in clients:
             client.send(packet)
-        sentsize += PACKET_SIZE - 4  # Leave 4 bytes space for the target-prefix
+        sentsize += PACKET_SIZE - 4  # Leave 4 bytes space for target-prefix
         packet = file.read(PACKET_SIZE - 4)
     cmd_broadcast("trnsfend")
     print("file sent! " + str(sentsize))
@@ -79,7 +79,7 @@ def handle(client):
         try:
             message = client.recv(PACKET_SIZE)
             print(message.decode())
-        except:
+        except Exception:
             index = clients.index(client)
             clients.remove(client)
             client.close()
@@ -142,8 +142,6 @@ def guitab_files(tab_files):
             fileinfo_text.insert(INSERT, f"{folders_selection}:\n{files_selection}")
             fileinfo_text.grid(column=2, row=0, sticky="n")
             selectedpath = f"soundfiles/{folders_selection}/{files_selection}"
-
-            restart_keeptrack = True
 
             time_slider = tk.Scale(tab_files,
                                    from_=0, to=100,
