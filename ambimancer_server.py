@@ -3,13 +3,19 @@ import socket
 import os
 import vlc
 import time
+import PySimpleGUI as sgui
+import base64
+from PIL import Image
 
 # development parameters
 host = '192.168.178.28'
 port = 30000
+debug_text = 'all kinds of information can be put in this string '
 
 # configuration parameters
 PACKET_SIZE = 1024
+THUMBNAIL_SIZE = 64
+sgui.theme('DarkAmber')
 
 
 class Soundscape():
@@ -118,14 +124,119 @@ def receive():
 # trnsf_music(tosend)
 
 
+# ------------- #
+# GUI Functions #
+# ------------- #
+
+# from a user given image, generate base64 image data,
+# appropriate for a button thumbnail
+def gui_generate_thumb(image_path):
+    # crop the image with pil
+    raw_path = image_path.encode('unicode_escape')
+    pil_img = Image.open(raw_path)
+
+    # crop and scale if required
+    width, height = pil_img.size
+    if(width > THUMBNAIL_SIZE or height > THUMBNAIL_SIZE):
+        # crop the image to quadratic format
+        if(width > height):
+            abundant_pixels = width - height
+            left = abundant_pixels//2
+            right = width - (abundant_pixels//2)
+            pil_img = pil_img.crop((left, 0, right, height))
+        elif(height > width):
+            abundant_pixels = height - width
+            top = abundant_pixels//2
+            bott = height - (abundant_pixels//2)
+            pil_img = pil_img.crop((0, top, width, bott))
+
+        # scale down to THUMBNAIL_SIZExTHUMBNAIL_SIZE
+        # taken from https://stackoverflow.com/a/451580/16886761
+        basewidth = THUMBNAIL_SIZE
+        wpercent = (basewidth/float(pil_img.size[0]))
+        hsize = int((float(pil_img.size[1])*float(wpercent)))
+        pil_img = pil_img.resize((basewidth, hsize), Image.ANTIALIAS)
+        pil_img.save(raw_path.decode('utf-8'))
+
+    with open(raw_path, 'rb') as image_file:
+        return base64.b64encode(image_file.read())
+
+
+# first construct the layout, then the complete window, then return the latter
+def gui_construct():
+    top_row = [
+        sgui.Column(  # empty column as a spacer
+            [[]],
+            pad=(0, 0),
+            size=(120, 20)
+        ),
+        sgui.Frame('Search by Name', [[sgui.Input(key='search_name')]]),
+        sgui.Frame('Search by Tag', [[sgui.Input(key='search_tag')]])
+    ]
+    mid_row = [
+        sgui.Column(
+            [[sgui.Frame('', [
+                [sgui.Button('Create\nnew', size=(8, 2))],
+                [sgui.Button('bttn2')],
+                [sgui.Button('bttn3')],
+            ])]],
+            pad=(0, 0),
+            size=(120, 200),
+            vertical_alignment='top'
+        ),
+        # TODO: generate Ambience button grid (round 8 in one row)
+        sgui.Column([[sgui.Button('', image_data=gui_generate_thumb('./imgfiles/testthumb.png'), image_size=(64, 64))]],
+                    scrollable=True,
+                    expand_x=True,
+                    expand_y=True),
+    ]
+    global debug_text
+    bot_row = [
+        sgui.Text(debug_text)
+    ]
+    layout = [
+        [top_row],
+        [mid_row],
+        [bot_row]
+    ]
+    window = sgui.Window('Ambimancer Server', layout)
+    return window
+
+
+# run the GUI interaction loop until the window closes or the user quits
+def gui_run(window):
+    while True:
+        event, values = window.read(timeout=100)
+        if(event == sgui.WIN_CLOSED or event == 'Exit'):
+            break
+
+        # the read attempt has timed out, ergo no button was pressed.
+        elif(event == '__TIMEOUT__'):
+
+            # run search function
+            if(values['search_name'] or values['search_tag']):
+                print(values)
+
+    # terminate window
+    window.close()
+
+
+# ---- #
+# Main #
+# ---- #
+
+
 if (__name__ == "__main__"):
-    # receive_thread = threading.Thread(target=receive)
-    # receive_thread.daemon = True
-    # receive_thread.start()
+    #receive_thread = threading.Thread(target=receive)
+    #receive_thread.daemon = True
+    #receive_thread.start()
+
+    # construct and then run the GUI on the main thread
+    gui_run(gui_construct())
 
     # debug information if all still running threads are deamons, ergo
     # if they terminate automatically with the main thread
-    if(len(threading.enumerate()) > 1):  # if more threads than just main thread
+    if(len(threading.enumerate()) > 1):
         print("The following threads were still running, are they daemons?")
         for th in threading.enumerate():
             if(th.name == "MainThread"):

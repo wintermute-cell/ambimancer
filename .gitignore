@@ -4,6 +4,7 @@
 
 *.png
 soundfiles/*
+imgfiles/*
 
 # ------- #
 # General #
