@@ -35,7 +35,8 @@ class Soundscape():
         pass
 
 
-soundscapes = []
+ambiences = []
+ambience_buttons = []
 
 # try to make soundfiles dir if it doesn't already exist
 try:
@@ -163,7 +164,8 @@ def gui_generate_thumb(image_path):
 
 
 # first construct the layout, then the complete window, then return the latter
-def gui_construct():
+def gui_construct(location=None):
+    global ambiences
     top_row = [
         sgui.Column(  # empty column as a spacer
             [[]],
@@ -173,6 +175,28 @@ def gui_construct():
         sgui.Frame('Search by Name', [[sgui.Input(key='search_name')]]),
         sgui.Frame('Search by Tag', [[sgui.Input(key='search_tag')]])
     ]
+
+    # pregenerate a list of lists with a total of 256 buttons
+    def pregen_buttons(layout, num_buttons):
+        curr_num_buttons = 0
+        global ambience_buttons
+        for row in range(32):
+            rowlist = []
+            for b in range(8):
+                if(curr_num_buttons >= num_buttons):
+                    layout.append(rowlist)
+                    return
+                new_button = sgui.Button(f'{row} {b}',
+                                         image_size=(64, 64), visible=True)
+                ambience_buttons.append(new_button)
+                rowlist.append(new_button)
+                curr_num_buttons += 1
+            layout.append(rowlist)
+        return
+
+    ambi_button_layout = []
+    pregen_buttons(ambi_button_layout, len(ambiences))
+
     mid_row = [
         sgui.Column(
             [[sgui.Frame('', [
@@ -185,7 +209,7 @@ def gui_construct():
             vertical_alignment='top'
         ),
         # TODO: generate Ambience button grid (round 8 in one row)
-        sgui.Column([[sgui.Button('', image_data=gui_generate_thumb('./imgfiles/testthumb.png'), image_size=(64, 64))]],
+        sgui.Column(ambi_button_layout,
                     scrollable=True,
                     expand_x=True,
                     expand_y=True),
@@ -199,7 +223,11 @@ def gui_construct():
         [mid_row],
         [bot_row]
     ]
-    window = sgui.Window('Ambimancer Server', layout)
+
+    if(not location):
+        window = sgui.Window('Ambimancer Server', layout)
+    else:
+        window = sgui.Window('Ambimancer Server', layout, location=location)
     return window
 
 
@@ -216,6 +244,13 @@ def gui_run(window):
             # run search function
             if(values['search_name'] or values['search_tag']):
                 print(values)
+                # TODO: remember to strip whitespaces
+                # off of the values before using
+        else:
+            if(event == 'Create\nnew'):
+                newwin = gui_construct(window.CurrentLocation())
+                window.close()
+                window = newwin
 
     # terminate window
     window.close()
