@@ -35,7 +35,7 @@ class Soundscape():
         pass
 
 
-ambiences = []
+ambiences = [1, 2, 3, 4]
 ambience_buttons = []
 
 # try to make soundfiles dir if it doesn't already exist
@@ -166,6 +166,7 @@ def gui_generate_thumb(image_path):
 # first construct the layout, then the complete window, then return the latter
 def gui_construct(location=None):
     global ambiences
+
     top_row = [
         sgui.Column(  # empty column as a spacer
             [[]],
@@ -177,25 +178,22 @@ def gui_construct(location=None):
     ]
 
     # pregenerate a list of lists with a total of 256 buttons
-    def pregen_buttons(layout, num_buttons):
-        curr_num_buttons = 0
+    def pregen_buttons(layout):
         global ambience_buttons
         for row in range(32):
             rowlist = []
             for b in range(8):
-                if(curr_num_buttons >= num_buttons):
-                    layout.append(rowlist)
-                    return
-                new_button = sgui.Button(f'{row} {b}',
-                                         image_size=(64, 64), visible=True)
+                default_thumb = gui_generate_thumb('./resources/nothumb.png')
+                new_button = sgui.Button(image_size=(64, 64),
+                                         image_data=default_thumb,
+                                         visible=True)
                 ambience_buttons.append(new_button)
-                rowlist.append(new_button)
-                curr_num_buttons += 1
+                rowlist.append(sgui.Frame('', [[new_button]], border_width=0))
             layout.append(rowlist)
         return
 
     ambi_button_layout = []
-    pregen_buttons(ambi_button_layout, len(ambiences))
+    pregen_buttons(ambi_button_layout)
 
     mid_row = [
         sgui.Column(
@@ -208,7 +206,6 @@ def gui_construct(location=None):
             size=(120, 200),
             vertical_alignment='top'
         ),
-        # TODO: generate Ambience button grid (round 8 in one row)
         sgui.Column(ambi_button_layout,
                     scrollable=True,
                     expand_x=True,
@@ -224,15 +221,13 @@ def gui_construct(location=None):
         [bot_row]
     ]
 
-    if(not location):
-        window = sgui.Window('Ambimancer Server', layout)
-    else:
-        window = sgui.Window('Ambimancer Server', layout, location=location)
+    window = sgui.Window('Ambimancer Server', layout)
     return window
 
 
 # run the GUI interaction loop until the window closes or the user quits
 def gui_run(window):
+    test = True
     while True:
         event, values = window.read(timeout=100)
         if(event == sgui.WIN_CLOSED or event == 'Exit'):
@@ -248,10 +243,9 @@ def gui_run(window):
                 # off of the values before using
         else:
             if(event == 'Create\nnew'):
-                newwin = gui_construct(window.CurrentLocation())
-                window.close()
-                window = newwin
-
+                test = not test
+                for button in ambience_buttons:
+                    button.update(visible=test)
     # terminate window
     window.close()
 

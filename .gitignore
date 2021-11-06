@@ -2,7 +2,6 @@
 # Specific #
 # -------- #
 
-*.png
 soundfiles/*
 imgfiles/*
 
