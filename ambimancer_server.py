@@ -1,16 +1,17 @@
 import threading
 import socket
 import os
-import vlc
-import time
+# import vlc
+# import time
 import PySimpleGUI as sgui
 import base64
 from PIL import Image
+import json
 
 # development parameters
 host = '192.168.178.28'
 port = 30000
-debug_text = 'all kinds of information can be put in this string '
+debug_text = 'all kinds of information can be put in this string'
 
 # configuration parameters
 PACKET_SIZE = 1024
@@ -18,21 +19,33 @@ THUMBNAIL_SIZE = 64
 sgui.theme('DarkAmber')
 
 
-class Soundscape():
+class Ambience():
     name = ""
+    b64thumb = None
+    tags = []
 
     music = {}  # track_path | id
     music_vol = {}  # id | volume
 
     ambient = {}  # track_path | id
     ambient_vol = {}  # id | volume
-    ambient_prob = {}  # id | propability
+    ambient_prob = {}  # id | probability
 
-    def __init__(self, name):
+    def __init__(self, name='New Ambience'):
         self.name = name
 
-    def add_music(track_orig_path):
-        pass
+    def add_music(self, track_orig_path):
+        curridx = len(self.music.keys())
+        self.music[track_orig_path] = curridx
+        self.music_vol[curridx] = 1
+
+    def add_ambient(self, track_orig_path):
+        curridx = len(self.ambient.keys())
+        self.ambient[track_orig_path] = curridx
+        self.ambient_vol[curridx] = 1
+        # TODO: properly calculate probability (and possibly)
+        # recalculate probability for all other tracks
+        self.ambient_prob[curridx] = 1
 
 
 ambiences = [1, 2, 3, 4]
@@ -184,9 +197,11 @@ def gui_construct(location=None):
             rowlist = []
             for b in range(8):
                 default_thumb = gui_generate_thumb('./resources/nothumb.png')
+                # TODO: scrolling works properly when buttons are
+                # initialized as visible
                 new_button = sgui.Button(image_size=(64, 64),
                                          image_data=default_thumb,
-                                         visible=True)
+                                         visible=False)
                 ambience_buttons.append(new_button)
                 rowlist.append(sgui.Frame('', [[new_button]], border_width=0))
             layout.append(rowlist)
@@ -209,7 +224,7 @@ def gui_construct(location=None):
         sgui.Column(ambi_button_layout,
                     scrollable=True,
                     expand_x=True,
-                    expand_y=True),
+                    size=(600, 900)),
     ]
     global debug_text
     bot_row = [
@@ -235,7 +250,6 @@ def gui_run(window):
 
         # the read attempt has timed out, ergo no button was pressed.
         elif(event == '__TIMEOUT__'):
-
             # run search function
             if(values['search_name'] or values['search_tag']):
                 print(values)
@@ -246,6 +260,7 @@ def gui_run(window):
                 test = not test
                 for button in ambience_buttons:
                     button.update(visible=test)
+
     # terminate window
     window.close()
 
@@ -253,6 +268,23 @@ def gui_run(window):
 # ---- #
 # Main #
 # ---- #
+
+def load_local_data():
+    global ambiences
+    # TODO: load ambiences from json
+
+
+def write_ambience_to_json(ambience):
+    testambient = Ambience()
+    testambient.b64thumb = gui_generate_thumb('./resources/nothumb.png')
+    testambient.tags = ['test', 'debug']
+    trackpath = "./soundfiles/Assassin's Creed 3/02 An Uncertain Present.mp3"
+    testambient.add_music(trackpath)
+
+    with open('./ambiences.json', 'a') as file:
+        dic = testambient.__dict__
+        dic['b64thumb'] = dic['b64thumb'].decode('ascii')
+        file.write(json.dumps(dic))
 
 
 if (__name__ == "__main__"):
