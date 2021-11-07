@@ -6,7 +6,7 @@ import os
 import PySimpleGUI as sgui
 import base64
 from PIL import Image
-import json
+import pickle
 
 # development parameters
 host = '192.168.178.28'
@@ -48,12 +48,13 @@ class Ambience():
         self.ambient_prob[curridx] = 1
 
 
-ambiences = [1, 2, 3, 4]
+ambiences = []
 ambience_buttons = []
 
-# try to make soundfiles dir if it doesn't already exist
+# initialize directories
 try:
-    os.mkdir("./soundfiles")
+    os.mkdir("./soundfiles/")
+    os.mkdir("./ambiences/")
 except Exception:
     pass
 
@@ -138,6 +139,51 @@ def receive():
 # trnsf_music(tosend)
 
 
+# -------------- #
+# Data Functions #
+# -------------- #
+
+def write_ambience_to_file(ambience):
+    # first resolve duplicate filenames, since filename is based
+    # on ambience name
+    if(os.path.isfile(f'./ambiences/{ambience.name}')):
+        idx = 1
+        while True:
+            if(os.path.isfile(f'./ambiences/{ambience.name}_{idx}')):
+                idx += 1
+                continue
+            else:
+                ambience.name = f'{ambience.name}_{idx}'
+                break
+
+    # write to file when a non-duplicate filename is found
+    with open(f'./ambiences/{ambience.name}', 'ab') as file:
+        pickle.dump(ambience, file)
+        print(f'wrote ambience to file ./ambiences/{ambience.name}.')
+
+
+def load_ambiences_from_file():
+    global ambiences
+    ambiences.clear()
+    counter = 0
+    for filename in os.listdir('./ambiences/'):
+        with open(f'./ambiences/{filename}', 'rb') as file:
+            ambience = pickle.load(file)
+            ambiences.append(ambience)
+            print(f'loaded ambience with name: {ambience.name}.')
+        counter += 1
+    print(f'loaded a total of {counter} ambiences!')
+
+
+def create_new_ambience():
+    global ambiences
+
+    new_ambience = Ambience()
+    ambiences.append(new_ambience)
+    write_ambience_to_file(new_ambience)
+    print(f'created and saved new ambience with name: {new_ambience.name}')
+
+
 # ------------- #
 # GUI Functions #
 # ------------- #
@@ -176,6 +222,23 @@ def gui_generate_thumb(image_path):
         return base64.b64encode(image_file.read())
 
 
+def gui_init_buttons():
+    global ambience_buttons
+    global ambiences
+
+    curr_num_buttons = 0
+    max_num_buttons = len(ambiences)
+
+    # make a button visible for each loaded ambience_buttons
+    # and apply the saved thumbnail to it
+    for button in ambience_buttons:
+        if(curr_num_buttons >= max_num_buttons):
+            break
+        button.update(image_data=ambiences[curr_num_buttons].b64thumb,
+                      visible=True)
+        curr_num_buttons += 1
+
+
 # first construct the layout, then the complete window, then return the latter
 def gui_construct(location=None):
     global ambiences
@@ -193,17 +256,22 @@ def gui_construct(location=None):
     # pregenerate a list of lists with a total of 256 buttons
     def pregen_buttons(layout):
         global ambience_buttons
+
+        button_idx = 0
         for row in range(32):
             rowlist = []
             for b in range(8):
                 default_thumb = gui_generate_thumb('./resources/nothumb.png')
-                # TODO: scrolling works properly when buttons are
-                # initialized as visible
+                rcm = ['', [f'Edit::{button_idx}',
+                            f'Duplicate::{button_idx}',
+                            f'Remove::{button_idx}']]
                 new_button = sgui.Button(image_size=(64, 64),
                                          image_data=default_thumb,
-                                         visible=False)
+                                         visible=True,
+                                         right_click_menu=rcm)
                 ambience_buttons.append(new_button)
                 rowlist.append(sgui.Frame('', [[new_button]], border_width=0))
+                button_idx += 1
             layout.append(rowlist)
         return
 
@@ -236,13 +304,26 @@ def gui_construct(location=None):
         [bot_row]
     ]
 
-    window = sgui.Window('Ambimancer Server', layout)
+    window = sgui.Window('Ambimancer Server', layout, finalize=True)
+
+    # this is a hacky workaround for the issue that when the buttons get
+    # initialized as invisible (even with frame parent), the layout
+    # is broken.
+    for button in ambience_buttons:
+        button.update(visible=False)
+
     return window
 
 
 # run the GUI interaction loop until the window closes or the user quits
 def gui_run(window):
-    test = True
+    global ambience_buttons
+    global ambiences
+
+    # initialize gui state
+    gui_init_buttons()
+
+    # main gui loop
     while True:
         event, values = window.read(timeout=100)
         if(event == sgui.WIN_CLOSED or event == 'Exit'):
@@ -256,10 +337,22 @@ def gui_run(window):
                 # TODO: remember to strip whitespaces
                 # off of the values before using
         else:
+            if('::' in event):
+                event, id = event.split('::')
             if(event == 'Create\nnew'):
-                test = not test
+                create_new_ambience()
                 for button in ambience_buttons:
-                    button.update(visible=test)
+                    if(not button.visible):
+                        button.update(visible=True)
+                        break
+
+            # handle right click menu
+            elif(event == 'Edit'):
+                print(event, id)
+            elif(event == 'Duplicate'):
+                print(event, id)
+            elif(event == 'Remove'):
+                pass
 
     # terminate window
     window.close()
@@ -269,28 +362,12 @@ def gui_run(window):
 # Main #
 # ---- #
 
-def load_local_data():
-    global ambiences
-    # TODO: load ambiences from json
-
-
-def write_ambience_to_json(ambience):
-    testambient = Ambience()
-    testambient.b64thumb = gui_generate_thumb('./resources/nothumb.png')
-    testambient.tags = ['test', 'debug']
-    trackpath = "./soundfiles/Assassin's Creed 3/02 An Uncertain Present.mp3"
-    testambient.add_music(trackpath)
-
-    with open('./ambiences.json', 'a') as file:
-        dic = testambient.__dict__
-        dic['b64thumb'] = dic['b64thumb'].decode('ascii')
-        file.write(json.dumps(dic))
-
-
 if (__name__ == "__main__"):
     #receive_thread = threading.Thread(target=receive)
     #receive_thread.daemon = True
     #receive_thread.start()
+
+    load_ambiences_from_file()
 
     # construct and then run the GUI on the main thread
     gui_run(gui_construct())
