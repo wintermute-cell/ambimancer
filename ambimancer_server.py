@@ -7,6 +7,7 @@ import PySimpleGUI as sgui
 import base64
 from PIL import Image
 import pickle
+import copy
 
 # development parameters
 host = '192.168.178.28'
@@ -184,6 +185,15 @@ def create_new_ambience():
     print(f'created and saved new ambience with name: {new_ambience.name}')
 
 
+def clone_ambience(ambience):
+    global ambiences
+
+    new_ambience = copy.deepcopy(ambience)
+    ambiences.append(new_ambience)
+    write_ambience_to_file(new_ambience)
+    print(f'cloned ambience to: {new_ambience.name}')
+
+
 # ------------- #
 # GUI Functions #
 # ------------- #
@@ -243,6 +253,7 @@ def gui_init_buttons():
 def gui_construct(location=None):
     global ambiences
 
+    # BEGIN main layout
     top_row = [
         sgui.Column(  # empty column as a spacer
             [[]],
@@ -298,13 +309,22 @@ def gui_construct(location=None):
     bot_row = [
         sgui.Text(debug_text)
     ]
-    layout = [
-        [top_row],
-        [mid_row],
-        [bot_row]
+    main_layout = [
+        top_row,
+        mid_row,
+        bot_row
     ]
+    # END main layout
 
-    window = sgui.Window('Ambimancer Server', layout, finalize=True)
+    # BEGIN edit layout
+    edit_layout = [[sgui.Button('Edit::1')]]
+    # TODO: implement edit view layout.
+    # END edit layout
+
+    window = sgui.Window('Ambimancer Server', [[
+                          sgui.Column(main_layout, k='main'),
+                          sgui.Column(edit_layout, k='edit', visible=False)]],
+                         finalize=True)
 
     # this is a hacky workaround for the issue that when the buttons get
     # initialized as invisible (even with frame parent), the layout
@@ -313,6 +333,63 @@ def gui_construct(location=None):
         button.update(visible=False)
 
     return window
+
+
+def gui_enter_editmode(window, ambience_index):
+    window['main'].update(visible=False)
+    window['edit'].update(visible=True)
+
+
+def gui_exit_editmode(window):
+    window['main'].update(visible=True)
+    window['edit'].update(visible=False)
+
+
+def gui_handle_rightclick(event, button_id, window):
+    global ambiences
+    global ambience_buttons
+
+    if(event == 'Edit'):
+        if(window['main'].visible):
+            gui_enter_editmode(window, 0)
+        else:
+            gui_exit_editmode(window)
+
+    elif(event == 'Duplicate'):
+        clone_ambience(ambiences[button_id])
+        for button in ambience_buttons:
+            if(not button.visible):
+                button.update(visible=True,
+                              image_data=ambiences[button_id].ImageData)
+                break
+
+    elif(event == 'Remove'):
+        # try to remove the file
+        try:
+            os.remove(f'./ambiences/{ambiences[button_id].name}')
+        except Exception:
+            print(f'file with name {ambiences[button_id].name} already gone!')
+
+        # remove the ambience from memory
+        del ambiences[button_id]
+
+        # correct the buttons
+        for idx in range(button_id, len(ambience_buttons)-2):
+
+            # if this is the last visible button,
+            # just remove its thumbnail and make it invisible
+            if(not ambience_buttons[idx+1].visible):
+                nothumb = gui_generate_thumb('./resources/nothumb.png')
+                ambience_buttons[idx].update(visible=False,
+                                             image_data=nothumb)
+                break
+
+            # shift the thumbnail data from the next button
+            # to this one
+            else:
+                print(ambience_buttons[idx+1].__dict__)
+                image_data = ambience_buttons[idx+1].ImageData
+                ambience_buttons[idx].update(image_data=image_data)
 
 
 # run the GUI interaction loop until the window closes or the user quits
@@ -337,22 +414,20 @@ def gui_run(window):
                 # TODO: remember to strip whitespaces
                 # off of the values before using
         else:
+            print(event)
+            # extract the id from the event if necessary
             if('::' in event):
-                event, id = event.split('::')
+                event, button_id = event.split('::')
+                button_id = int(button_id)
+
             if(event == 'Create\nnew'):
                 create_new_ambience()
                 for button in ambience_buttons:
                     if(not button.visible):
                         button.update(visible=True)
                         break
-
-            # handle right click menu
-            elif(event == 'Edit'):
-                print(event, id)
-            elif(event == 'Duplicate'):
-                print(event, id)
-            elif(event == 'Remove'):
-                pass
+            elif(event in ['Edit', 'Duplicate', 'Remove']):
+                gui_handle_rightclick(event, button_id, window)
 
     # terminate window
     window.close()
