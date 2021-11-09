@@ -364,6 +364,11 @@ def gui_handle_rightclick(event, button_id, window):
                 break
 
     elif(event == 'Remove'):
+        # first confirm user intent with a popup
+        confirmation = sgui.popup_ok_cancel('Permanently remove Ambience?')
+        if(confirmation != 'OK'):
+            return
+
         # try to remove the file
         try:
             os.remove(f'./ambiences/{ambiences[button_id].name}')
@@ -387,7 +392,6 @@ def gui_handle_rightclick(event, button_id, window):
             # shift the thumbnail data from the next button
             # to this one
             else:
-                print(ambience_buttons[idx+1].__dict__)
                 image_data = ambience_buttons[idx+1].ImageData
                 ambience_buttons[idx].update(image_data=image_data)
 
