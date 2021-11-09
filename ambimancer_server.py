@@ -419,7 +419,6 @@ def gui_construct_editmode():
     return window
 
 
-
 def gui_enter_editmode(window, ambience_index):
     window['main'].update(visible=False)
     window['edit'].update(visible=True)
@@ -445,7 +444,7 @@ def gui_handle_rightclick(event, button_id, window):
         for button in ambience_buttons:
             if(not button.visible):
                 button.update(visible=True,
-                              image_data=ambiences[button_id].ImageData)
+                              image_data=ambience_buttons[button_id].ImageData)
                 break
 
     elif(event == 'Remove'):
