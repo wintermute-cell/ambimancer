@@ -250,7 +250,7 @@ def gui_init_buttons():
 
 
 # first construct the layout, then the complete window, then return the latter
-def gui_construct(location=None):
+def gui_construct():
     global ambiences
 
     # BEGIN main layout
@@ -276,7 +276,8 @@ def gui_construct(location=None):
                 rcm = ['', [f'Edit::{button_idx}',
                             f'Duplicate::{button_idx}',
                             f'Remove::{button_idx}']]
-                new_button = sgui.Button(image_size=(64, 64),
+                new_button = sgui.Button(f'Ambience::{button_idx}',
+                                         image_size=(64, 64),
                                          image_data=default_thumb,
                                          visible=True,
                                          right_click_menu=rcm)
@@ -293,7 +294,8 @@ def gui_construct(location=None):
         sgui.Column(
             [[sgui.Frame('', [
                 [sgui.Button('Create\nnew', size=(8, 2))],
-                [sgui.Button('bttn2')],
+                # TODO: Implement other functionalities, if necessary
+                [sgui.Button('Random')],
                 [sgui.Button('bttn3')],
             ])]],
             pad=(0, 0),
@@ -335,6 +337,89 @@ def gui_construct(location=None):
     return window
 
 
+def gui_construct_editmode():
+    global ambiences
+
+    # BEGIN main layout
+    top_row = [
+        sgui.Column(  # empty column as a spacer
+            [[]],
+            pad=(0, 0),
+            size=(120, 20)
+        ),
+        sgui.Frame('Search by Name', [[sgui.Input(key='search_name')]]),
+        sgui.Frame('Search by Tag', [[sgui.Input(key='search_tag')]])
+    ]
+
+    # pregenerate a list of ambience components (individual tracks with
+    # parameters such as probability and volume)
+#    def pregen_ambi_component(layout):
+#        global ambience_buttons
+#
+#
+#
+#        component_idx = 0
+#        for b in range(128):
+#            new_button = sgui.Button(image_size=(64, 64),
+#                                     image_data=default_thumb,
+#                                     visible=True)
+#            ambience_buttons.append(new_button)
+#            rowlist.append(sgui.Frame('', [[new_button]], border_width=0))
+#            button_idx += 1
+#            layout.append(rowlist)
+#        return
+
+    ambi_component_layout = []
+#    pregen_ambi_component(ambi_component_layout)
+
+    mid_row = [
+        sgui.Column(
+            [[sgui.Frame('', [
+                [sgui.Button('Create\nnew', size=(8, 2))],
+                # TODO: Implement other functionalities, if necessary
+                [sgui.Button('Random')],
+                [sgui.Button('bttn3')],
+            ])]],
+            pad=(0, 0),
+            size=(120, 200),
+            vertical_alignment='top'
+        ),
+        sgui.Column(ambi_component_layout,
+                    scrollable=True,
+                    expand_x=True,
+                    size=(600, 900)),
+    ]
+    global debug_text
+    bot_row = [
+        sgui.Text(debug_text)
+    ]
+    main_layout = [
+        top_row,
+        mid_row,
+        bot_row
+    ]
+    # END main layout
+
+    # BEGIN edit layout
+    edit_layout = [[sgui.Button('Edit::1')]]
+    # TODO: implement edit view layout.
+    # END edit layout
+
+    window = sgui.Window('Ambimancer Server', [[
+                          sgui.Column(main_layout, k='main'),
+                          sgui.Column(edit_layout, k='edit', visible=False)]],
+                         finalize=True)
+
+    # this is a hacky workaround for the issue that when the buttons get
+    # initialized as invisible (even with frame parent), the layout
+    # is broken.
+    for button in ambience_buttons:
+        button.update(visible=False)
+
+    return window
+
+
+
 def gui_enter_editmode(window, ambience_index):
     window['main'].update(visible=False)
     window['edit'].update(visible=True)
@@ -365,11 +450,15 @@ def gui_handle_rightclick(event, button_id, window):
 
     elif(event == 'Remove'):
         # first confirm user intent with a popup
-        confirmation = sgui.popup_ok_cancel('Permanently remove Ambience?')
-        if(confirmation != 'OK'):
+        center_coords = tuple(map(lambda x, y: x + y,
+                                  window.CurrentLocation(), (200, 200)))
+        confirm = sgui.popup_ok_cancel('Permanently remove Ambience?',
+                                       keep_on_top=True,
+                                       location=center_coords)
+        if(confirm != 'OK'):
             return
 
-        # try to remove the file
+        # try to remove the file, looking up it's registered filename
         try:
             os.remove(f'./ambiences/{ambiences[button_id].name}')
         except Exception:
@@ -418,7 +507,6 @@ def gui_run(window):
                 # TODO: remember to strip whitespaces
                 # off of the values before using
         else:
-            print(event)
             # extract the id from the event if necessary
             if('::' in event):
                 event, button_id = event.split('::')
