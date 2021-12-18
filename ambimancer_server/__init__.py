@@ -22,4 +22,8 @@ def create_app():
     from ambimancer_server.endpoints import endp_motd
     server.register_blueprint(endp_motd.bp)
 
+    # streaming endpoint
+    from ambimancer_server.endpoints import endp_audio
+    server.register_blueprint(endp_audio.bp)
+
     return server
