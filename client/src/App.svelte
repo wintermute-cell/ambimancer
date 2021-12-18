@@ -2,7 +2,7 @@
       let motd = ""
 
       function get_motd(){
-            fetch(./motd)
+            fetch("./motd")
                   .then(d => d.text())
                   .then(d => (motd = d));
       }
