@@ -7,6 +7,7 @@ import pickle
 import copy
 from kivy.app import App
 from kivy.uix.widget import Widget
+from kivy.uix.anchorlayout import AnchorLayout
 
 # development parameters
 host = '192.168.178.28'
@@ -197,6 +198,10 @@ def clone_ambience(ambience):
 # ------------- #
 
 class MainWidget(Widget):
+    pass
+
+
+class MASTER_MainAnchor(AnchorLayout):
     pass
 
 
