@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_socketio import SocketIO, send
 
 
 # application factory
@@ -10,7 +11,11 @@ def create_app():
         # https://flask.palletsprojects.com/en/2.0.x/config/
         # in this block.
         debug=True,
+        SECRET_KEY='devsecret',
     )
+
+    # socket io for broadcasting instructions to the clients
+    socketio = SocketIO(server)
 
     # importing and registering blueprints
     # (every endpoint should be defined as a blueprint)
