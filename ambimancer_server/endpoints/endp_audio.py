@@ -5,11 +5,12 @@ import os.path
 bp = Blueprint('audio', __name__)
 
 
-@bp.route('/audio/ogg/<aud_id>')
-def streamogg(aud_id):
+@bp.route('/audio/ogg/<type>/<aud_id>')
+def streamogg(type, aud_id):
+    print(type, aud_id)
+
     def generate():
-        print(aud_id)
-        fpath = os.path.join(ROOT_DIR, f'file/audio/{aud_id}.ogg')
+        fpath = os.path.join(ROOT_DIR, f'file/audio/{type}/{aud_id}.ogg')
         with open(fpath, "rb") as fogg:
             data = fogg.read(1024)
             while data:

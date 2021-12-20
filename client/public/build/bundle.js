@@ -1,5 +1,5 @@
 
-(function(l, r) { if (!l || l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (self.location.host || 'localhost').split(':')[0] + ':35730/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(self.document);
+(function(l, r) { if (!l || l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (self.location.host || 'localhost').split(':')[0] + ':35732/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(self.document);
 var app = (function () {
     'use strict';
 
@@ -3641,6 +3641,10 @@ var app = (function () {
     	let button2;
     	let t11;
     	let button3;
+    	let t13;
+    	let button4;
+    	let t15;
+    	let button5;
     	let mounted;
     	let dispose;
 
@@ -3665,12 +3669,20 @@ var app = (function () {
     			t11 = space();
     			button3 = element("button");
     			button3.textContent = "play";
-    			add_location(h10, file, 41, 0, 977);
-    			add_location(h11, file, 42, 0, 1009);
-    			add_location(button0, file, 43, 0, 1042);
-    			add_location(button1, file, 44, 0, 1091);
-    			add_location(button2, file, 45, 0, 1140);
-    			add_location(button3, file, 46, 0, 1181);
+    			t13 = space();
+    			button4 = element("button");
+    			button4.textContent = "ambiplay";
+    			t15 = space();
+    			button5 = element("button");
+    			button5.textContent = "ambistop";
+    			add_location(h10, file, 62, 0, 1665);
+    			add_location(h11, file, 63, 0, 1697);
+    			add_location(button0, file, 64, 0, 1730);
+    			add_location(button1, file, 65, 0, 1779);
+    			add_location(button2, file, 66, 0, 1828);
+    			add_location(button3, file, 67, 0, 1869);
+    			add_location(button4, file, 69, 0, 1911);
+    			add_location(button5, file, 70, 0, 1956);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -3691,13 +3703,19 @@ var app = (function () {
     			insert_dev(target, button2, anchor);
     			insert_dev(target, t11, anchor);
     			insert_dev(target, button3, anchor);
+    			insert_dev(target, t13, anchor);
+    			insert_dev(target, button4, anchor);
+    			insert_dev(target, t15, anchor);
+    			insert_dev(target, button5, anchor);
 
     			if (!mounted) {
     				dispose = [
     					listen_dev(button0, "click", /*playMusic*/ ctx[2], false, false, false),
     					listen_dev(button1, "click", /*stopMusic*/ ctx[3], false, false, false),
     					listen_dev(button2, "click", /*playSFX*/ ctx[4], false, false, false),
-    					listen_dev(button3, "click", /*stopSFX*/ ctx[5], false, false, false)
+    					listen_dev(button3, "click", /*stopSFX*/ ctx[5], false, false, false),
+    					listen_dev(button4, "click", /*playMus*/ ctx[6], false, false, false),
+    					listen_dev(button5, "click", /*stopMus*/ ctx[7], false, false, false)
     				];
 
     				mounted = true;
@@ -3721,6 +3739,10 @@ var app = (function () {
     			if (detaching) detach_dev(button2);
     			if (detaching) detach_dev(t11);
     			if (detaching) detach_dev(button3);
+    			if (detaching) detach_dev(t13);
+    			if (detaching) detach_dev(button4);
+    			if (detaching) detach_dev(t15);
+    			if (detaching) detach_dev(button5);
     			mounted = false;
     			run_all(dispose);
     		}
@@ -3742,8 +3764,22 @@ var app = (function () {
     	validate_slots('App', slots, []);
     	const socket = lookup.connect('http://127.0.0.1:5000/');
 
-    	socket.on('connect', () => {
-    		console.log('socket connected');
+    	socket.on('ambicall_music', data => {
+    		console.log('MUS:');
+    		console.log(data['name']);
+    		console.log(data['volume']);
+    		let audFile = new Audio('./audio/ogg/music/' + data['name']);
+    		audFile.volume = data['volume'];
+    		audFile.play();
+    	});
+
+    	socket.on('ambicall_sfx', data => {
+    		console.log('SFX:');
+    		console.log(data['name']);
+    		console.log(data['volume']);
+    		let audFile = new Audio('./audio/ogg/sfx/' + data['name']);
+    		audFile.volume = data['volume'];
+    		audFile.play();
     	});
 
     	let motd = "";
@@ -3773,6 +3809,14 @@ var app = (function () {
     		sfxFile.stop();
     	};
 
+    	const playMus = () => {
+    		fetch("./control/play/test");
+    	};
+
+    	const stopMus = () => {
+    		fetch("./control/stop/test");
+    	};
+
     	const updateCurrTime = () => {
     		$$invalidate(0, currTime = audFile.currentTime);
     		$$invalidate(1, currSFXTime = sfxFile.currentTime);
@@ -3798,6 +3842,8 @@ var app = (function () {
     		stopMusic,
     		playSFX,
     		stopSFX,
+    		playMus,
+    		stopMus,
     		updateCurrTime
     	});
 
@@ -3813,7 +3859,16 @@ var app = (function () {
     		$$self.$inject_state($$props.$$inject);
     	}
 
-    	return [currTime, currSFXTime, playMusic, stopMusic, playSFX, stopSFX];
+    	return [
+    		currTime,
+    		currSFXTime,
+    		playMusic,
+    		stopMusic,
+    		playSFX,
+    		stopSFX,
+    		playMus,
+    		stopMus
+    	];
     }
 
     class App extends SvelteComponentDev {

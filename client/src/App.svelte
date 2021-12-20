@@ -3,8 +3,22 @@
 
       const socket = io.connect('http://127.0.0.1:5000/')
 
-      socket.on('connect', () => {
-            console.log('socket connected');
+      socket.on('ambicall_music', (data) => {
+            console.log('MUS:')
+            console.log(data['name']);
+            console.log(data['volume'])
+            let audFile = new Audio('./audio/ogg/music/' + data['name'])
+            audFile.volume = data['volume']
+            audFile.play()
+      });
+
+      socket.on('ambicall_sfx', (data) => {
+            console.log('SFX:')
+            console.log(data['name']);
+            console.log(data['volume'])
+            let audFile = new Audio('./audio/ogg/sfx/' + data['name'])
+            audFile.volume = data['volume']
+            audFile.play()
       });
 
       let motd = "";
@@ -32,6 +46,13 @@
             sfxFile.stop();
       }
 
+      const playMus = () => {
+            fetch("./control/play/test")
+      }
+      const stopMus = () => {
+            fetch("./control/stop/test")
+      }
+
       const updateCurrTime = () => {
             currTime = audFile.currentTime;
             currSFXTime = sfxFile.currentTime;
@@ -45,3 +66,6 @@
 <button on:click={stopMusic}>stop music</button>
 <button on:click={playSFX}>play</button>
 <button on:click={stopSFX}>play</button>
+
+<button on:click={playMus}>ambiplay</button>
+<button on:click={stopMus}>ambistop</button>

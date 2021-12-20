@@ -1,22 +1,20 @@
 from flask import Flask
-from flask_socketio import SocketIO, send
+from flask_socketio import SocketIO
+import ambience_manager
+from os import getenv
 
 
-# application factory
 def create_app():
     server = Flask(__name__)
 
-    server.config.from_mapping(
-        # place configuration according to
-        # https://flask.palletsprojects.com/en/2.0.x/config/
-        # in this block.
-        debug=True,
-        SECRET_KEY='devsecret',
-    )
+    CONFIG_TYPE = getenv('CONFIG_TYPE', default='config.DevelopmentConfig')
+    server.config.from_object(CONFIG_TYPE)
 
     # socket io for broadcasting instructions to the clients
-    socketio = SocketIO(server)
+    socketio = SocketIO(server, async_mode=None)
+    ambience_manager.run(socketio)
 
+    # -------------------------------------------------
     # importing and registering blueprints
     # (every endpoint should be defined as a blueprint)
 
@@ -26,6 +24,9 @@ def create_app():
 
     from ambimancer_server.endpoints import endp_motd
     server.register_blueprint(endp_motd.bp)
+
+    from ambimancer_server.endpoints import endp_control
+    server.register_blueprint(endp_control.bp)
 
     # streaming endpoint
     from ambimancer_server.endpoints import endp_audio
