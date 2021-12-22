@@ -11,6 +11,9 @@ class Config:
     FLASK_ENV = 'development'
     DEBUG = False
     TESTING = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'ambimancer.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Settings applicable to all environments
     SECRET_KEY = os.getenv('SECRET_KEY', default='devkey')
