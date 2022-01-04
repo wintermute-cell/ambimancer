@@ -12,13 +12,14 @@ emitter_thread = None
 class Music():
     def __init__(self,
                  volume, shuffle, crossfade_bysecs, pause_bysecs, tracks):
-        self.volume = volume
+        self.volume = volume  # general music volume
         self.shuffle = shuffle
         self.crossfade_bysecs = crossfade_bysecs
         self.pause_bysecs = pause_bysecs
+
+        # a list of dicts with 'name', 'volume' and 'length'
         self.tracks = list(tracks.values())
         self.num_tracks = len(tracks)
-
         self.track_playing_for = 0
         self.current_track = None
         self.current_track_idx = None
@@ -47,7 +48,7 @@ class Music():
         self.track_playing_for = 0
 
     # returns the currently playing track, and a boolean indicating whether
-    # the track is a new track or still the old one
+    # the track has changed to a new one this tick
     def get_curr_track(self):
         # if there is no track playing, set the first one in the list.
         if self.current_track is None:
@@ -258,7 +259,7 @@ class AmbienceManager():
         self.ambience_begin()
 
 
-def run(socketio):
+def run(socketio, room_uuid):
     thread_lock = threading.Lock()
     global ambi_manager
     ambi_manager = AmbienceManager()
@@ -275,3 +276,16 @@ def run(socketio):
                                         ambi_manager.ambience_emitter,
                                         socketio
                                     )
+
+    @socketio.event
+    def ambience_edit(msg):
+        for ambience in ambi_manager.current_ambiences:
+            if ambience.name == msg['ambience']:
+                if msg['type'] == 'music':
+                    socketio.emit('debug', {
+                        'msg': 'Muuusic!'
+                    })
+                elif msg['type'] == 'sfx':
+                    pass
+                break
+        # no ambience is currently running

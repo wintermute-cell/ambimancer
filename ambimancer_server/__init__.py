@@ -1,14 +1,7 @@
 from flask import Flask
 from flask_socketio import SocketIO
-from flask_sqlalchemy import SQLAlchemy
-import ambience_manager
+from . import lobby_handler
 from os import getenv
-from flask_httpauth import HTTPBasicAuth
-from flask_migrate import Migrate
-
-db = SQLAlchemy()
-auth = HTTPBasicAuth()
-migrate = Migrate()
 
 
 def create_app():
@@ -17,14 +10,17 @@ def create_app():
     CONFIG_TYPE = getenv('CONFIG_TYPE', default='config.DevelopmentConfig')
     server.config.from_object(CONFIG_TYPE)
 
+    from ambimancer_server.models import db
     db.init_app(server)
+
+    from ambimancer_server.models import migrate
     migrate.init_app(server, db)
 
-    import ambimancer_server.models
+    from ambimancer_server.auth import oauth
+    oauth.init_app(server)
 
-    # socket io for broadcasting instructions to the clients
-    socketio = SocketIO(server, async_mode=None)
-    ambience_manager.run(socketio)
+    from ambimancer_server import room_handler
+    room_handler.init_app(server)
 
     # -------------------------------------------------
     # importing and registering blueprints
@@ -34,9 +30,9 @@ def create_app():
     from ambimancer_server.endpoints import endp_core
     server.register_blueprint(endp_core.bp)
 
-    # TODO: to be removed
-    from ambimancer_server.endpoints import endp_motd
-    server.register_blueprint(endp_motd.bp)
+    # room creation endpoint.
+    from ambimancer_server.endpoints import endp_rooms
+    server.register_blueprint(endp_rooms.bp)
 
     # admin control endpoint
     from ambimancer_server.endpoints import endp_control

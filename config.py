@@ -1,7 +1,10 @@
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
+
+ENVFILE = find_dotenv()
+if ENVFILE:
+    load_dotenv()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -17,6 +20,9 @@ class Config:
 
     # Settings applicable to all environments
     SECRET_KEY = os.getenv('SECRET_KEY', default='devkey')
+
+    AUTH0_LOGOUT_URL = './auth/logout'
+    AUTH0_CALLBACK_URL = './auth/callback'
 
 
 class DevelopmentConfig(Config):
