@@ -11,7 +11,8 @@ def create_room():
 
     # TODO: implement proper auth here (checking license key or similar)
     if license_type == 'dev' and license_key == 'dev_key':
-        uuid = room_handler.create_room()
+        # license_key is given to create room as a uid.
+        uuid = room_handler.create_room(license_key)
         return {
             'state': 'success',
             'uuid': uuid

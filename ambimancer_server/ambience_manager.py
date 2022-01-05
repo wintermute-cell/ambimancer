@@ -5,8 +5,12 @@ import threading
 from time import perf_counter
 import random
 
-ambi_manager = None
-emitter_thread = None
+
+ambience_managers = {}
+
+def get_by_uid(uid):
+    global ambience_managers
+    return ambience_managers[uid]
 
 
 class Music():
@@ -174,13 +178,17 @@ class Ambience():
 
 
 class AmbienceManager():
-    def __init__(self):
+    # room_uuid is used for direction the socket emits to a particular socketio room.
+    # uid is used to identify the location of the admin users persistant files.
+    def __init__(self, room_uuid, uid):
         self.isPlaying = False
         self.current_ambiences = []
+        self.room_uuid = room_uuid
+        self.uid = uid
 
     # loads the file NAME.json into an ambience.
     def ambience_load(self, name):
-        fpath = os.path.join(ROOT_DIR, f'file/ambience/{name}.json')
+        fpath = os.path.join(ROOT_DIR, f'file/{uid}/ambience/{name}.json')
         with open(fpath) as file:
             ambi_data = json.load(file)
             mus_data = ambi_data['music']
@@ -204,6 +212,19 @@ class AmbienceManager():
                 sfx,
             )
             return ambience
+
+    # returns raw json string of ambience file.
+    # used by the ambience endpoint to communicate that information to the client.
+    def ambience_load_json(self, name):
+        fpath = os.path.join(ROOT_DIR, f'file/{self.uid}/ambience/{name}.json')
+        with open(fpath) as file:
+            return file.read()
+
+    def ambience_write_json(self, name):
+        # TODO: Implement this (checking if file exists, creating new one,
+        # checking if ambience is currently being played, if so, liveedit.)
+        pass
+
 
     def ambience_emitter(self, *args):
         socketio = args[0]
@@ -242,9 +263,6 @@ class AmbienceManager():
                 endtime = perf_counter()
                 deltatime = endtime - begintime
 
-    def ambience_begin(self):
-        self.isPlaying = True
-
     def ambience_stop(self, name):
         for ambience in self.current_ambiences:
             if ambience.name == name:
@@ -256,27 +274,25 @@ class AmbienceManager():
     def ambience_play(self, name):
         ambience = self.ambience_load(name)
         self.current_ambiences.append(ambience)
-        self.ambience_begin()
+        self.isPlaying = True
 
 
-def run(socketio, room_uuid):
+def run_new_instance(socketio, room_uuid, uid):
     thread_lock = threading.Lock()
-    global ambi_manager
-    ambi_manager = AmbienceManager()
+    ambi_manager = AmbienceManager(room_uuid, uid)
+    global ambience_managers
+    ambience_managers[uid] = ambi_manager
 
-    # when a client connects, and no ambience_emitter is running
-    # start one on the emitter_thread.
-    @socketio.event
-    def connect():
-        global emitter_thread
-        with thread_lock:
-            if(emitter_thread is None):
-                emitter_thread = socketio.\
-                                    start_background_task(
-                                        ambi_manager.ambience_emitter,
-                                        socketio
-                                    )
+    emitter_thread = None
 
+    with thread_lock:
+        emitter_thread = socketio.\
+            start_background_task(
+                ambi_manager.ambience_emitter,
+                socketio
+            )
+
+    """
     @socketio.event
     def ambience_edit(msg):
         for ambience in ambi_manager.current_ambiences:
@@ -289,3 +305,6 @@ def run(socketio, room_uuid):
                     pass
                 break
         # no ambience is currently running
+    """
+
+    return ambi_manager

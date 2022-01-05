@@ -1,6 +1,5 @@
 from flask import Flask
 from flask_socketio import SocketIO
-from . import lobby_handler
 from os import getenv
 
 
@@ -33,6 +32,10 @@ def create_app():
     # room creation endpoint.
     from ambimancer_server.endpoints import endp_rooms
     server.register_blueprint(endp_rooms.bp)
+
+    # ambience json data loading and writing endpoint.
+    from ambimancer_server.endpoints import endp_ambiences
+    server.register_blueprint(endp_ambiences.bp)
 
     # admin control endpoint
     from ambimancer_server.endpoints import endp_control

@@ -22,9 +22,17 @@
 
 <!-- global styling -->
 <style>
+      :global(body) {
+            height: 100%;
+            width: 100%;
+            padding: 0px;
+      }
       :global(p.form_error) {
             font-size: 0.7em;
             margin-top: 0.06em;
             color: red;
+      }
+      :global(.grid-container) {
+            display: grid;
       }
 </style>
