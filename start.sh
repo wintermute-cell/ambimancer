@@ -1,5 +1,5 @@
 #!/bin/sh
 cd client
-npm run dev &
+npm run --silent dev & disown
 cd ..
 flask run

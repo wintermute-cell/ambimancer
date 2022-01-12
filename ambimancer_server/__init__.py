@@ -1,5 +1,4 @@
 from flask import Flask
-from flask_socketio import SocketIO
 from os import getenv
 
 
@@ -18,8 +17,8 @@ def create_app():
     from ambimancer_server.auth import oauth
     oauth.init_app(server)
 
-    from ambimancer_server import room_handler
-    room_handler.init_app(server)
+    from ambimancer_server import socket_handler
+    socket_handler.init_app(server)
 
     # -------------------------------------------------
     # importing and registering blueprints

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<config>
+    <source_groups>
+        <source_group_7c68d9c6-5bda-44cb-844c-3c894b8dc659>
+            <exclude_filters>
+                <exclude_filter>ambimancer_server/__pycache__</exclude_filter>
+                <exclude_filter>venv</exclude_filter>
+            </exclude_filters>
+            <name>Python Source Group</name>
+            <source_extensions>
+                <source_extension>.py</source_extension>
+            </source_extensions>
+            <source_paths>
+                <source_path>./</source_path>
+                <source_path>ambimancer_server</source_path>
+            </source_paths>
+            <status>enabled</status>
+            <type>Python Source Group</type>
+        </source_group_7c68d9c6-5bda-44cb-844c-3c894b8dc659>
+    </source_groups>
+    <version>8</version>
+</config>

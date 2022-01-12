@@ -1,170 +1,228 @@
 <script>
-      import MasterControl from './MasterControl.svelte';
-      import AmbienceEditor from './AmbienceEditor.svelte'
+    import AmbienceEditor from './AmbienceEditor.svelte'
+    import store_userdata from '../stores/store_userdata.js';
 
-      // connect to the server.
-      // TODO: get correct server ip from another service.
-      import {io} from 'socket.io-client';
-      const socket = io.connect('http://127.0.0.1:5000/');
+    import Listener from './Listener.svelte';
+    let listener;
 
-      // TODO: remove for deployment.
-      socket.on('debug', (data) => {
-            console.log(data['msg']);
-      });
+    // connect to the server.
+    // TODO: get correct server ip from another service.
+    import {io} from 'socket.io-client';
+    const socket = io.connect('http://127.0.0.1:5000/');
 
-      let hovering = false;
-      let containers = {
-            'active': [
-                        'ambi1',
-                        'ambi2',
-            ],
-            'all': [
-                        'ambi3',
-                        'ambi4',
-                        'ambi5',
-                        'ambi6',
-                        'ambi7',
-                        'ambi8',
-                        'ambi9',
-                        'ambi10',
-                        'ambi11',
-                        'ambi12'
-            ]
-      }
-      function dragstart(event, container_name, item_idx) {
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.dropEffect = 'move';
-            let obj = {
-                  container_name: container_name,
-                  item_idx: item_idx,
-                  id: event.target.getAttribute('id')
-            };
-            event.dataTransfer.setData('text/plain', JSON.stringify(obj));
-      };
 
-      function drop(event, new_container_name) {
-            event.dataTransfer.dropEffect = 'move';
-            let json_obj = event.dataTransfer.getData('text/plain');
-            let obj = JSON.parse(json_obj);
-            let item_idx = obj.item_idx;
-            let old_container_name = obj.container_name;
-            const item = containers[old_container_name].splice(item_idx,1)[0];
-            containers[new_container_name] = [...containers[new_container_name],item];
-            hovering = null;
-            if (new_container_name === 'active') {
-                  //TODO: send call to server to start streaming the ambience
-                  } else if (new_container_name === 'all') {
-                        //TODO: send call to server to stop streaming the ambience
+
+    let uid;
+    let room_uuid;
+    store_userdata.subscribe((data) => {
+        uid = data.uid;
+        room_uuid = data.room_uuid;
+    });
+
+    let hovering = false;
+    let containers = {
+        'active': [
+            {
+                name: 'ambi1',
+                active: true
+            },
+            {
+                name: 'ambi2',
+                active: true
             }
-      };
+        ],
+        'all': [
+            {
+                name: 'ambi3',
+                active: false
+            },
+            {
+                name: 'ambi4',
+                active: false
+            },
+            {
+                name: 'ambi5',
+                active: false
+            },
+            {
+                name: 'ambi6',
+                active: false
+            },
+            {
+                name: 'ambi7',
+                active: false
+            },
+            {
+                name: 'ambi8',
+                active: false
+            },
+            {
+                name: 'ambi9',
+                active: false
+            },
+            {
+                name: 'ambi10',
+                active: false
+            }
+        ]
+    }
+    function dragstart(event, container_name, item_idx) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.dropEffect = 'move';
+        let obj = {
+            container_name: container_name,
+            item_idx: item_idx,
+            id: event.target.getAttribute('id')
+        };
+        event.dataTransfer.setData('text/plain', JSON.stringify(obj));
+    };
 
-      let selected_ambience = '';
-      function select_ambience(event) {
-            selected_ambience = event.target.id;
-      }
+    function drop(event, new_container_name) {
+        event.dataTransfer.dropEffect = 'move';
+        let json_obj = event.dataTransfer.getData('text/plain');
+        let obj = JSON.parse(json_obj);
+        let item_idx = obj.item_idx;
+        let old_container_name = obj.container_name;
+        const item = containers[old_container_name].splice(item_idx,1)[0];
+        containers[new_container_name] = [...containers[new_container_name],item];
+        hovering = null;
+        if (new_container_name === 'active') {
+            item.active = true;
+            socket.emit('ambience_set_active', {
+                uid: uid,
+                ambience_name: item.name
+            });
+        } else if (new_container_name === 'all') {
+            item.active = false;
+            socket.emit('ambience_set_inactive', {
+                uid: uid,
+                ambience_name: item.name
+            });
+            listener.stopAmbience(item.name);
+        }
+    };
+
+    let selected_ambience = '';
+    let selected_ambience_is_active;
+    function select_ambience(event) {
+        selected_ambience_is_active =
+            event.target.classList.contains('active-ambience') ? true : false;
+        selected_ambience = event.target.id;
+    }
 </script>
 
 <div class="grid-container">
-      <div class="grid-item"
-           id="panel_active"
-           on:drop|preventDefault={event => drop(event, 'active')}
-           ondragover="return false"
-           on:dragenter="{() => hovering = 'active'}"
-           on:dragleave="{() => hovering = null}"
-           class:hovering="{hovering === 'active'}"
-      >
-            <div class="grid-container-title">Active Ambiences</div>
-            <ul class="ambience-list">
-                  {#each containers['active'] as item,i}
-                        <li draggable={true}
-                              on:dragstart={event => dragstart(event, 'active', i)}
-                              on:click={select_ambience}
-                              id={item}
-                              class="ambience-list-item"
-                        >
-                              {item}
-                        </li>
-                  {/each}
-            </ul>
-      </div>
-      <div class="grid-item"
-           id="panel_all"
-           on:drop|preventDefault={event => drop(event, 'all')}
-           ondragover="return false"
-           on:dragenter="{() => hovering = 'all'}"
-           on:dragleave="{() => hovering = null}"
-           class:hovering="{hovering === 'all'}"
-      >
-            <div class="grid-container-title">All Ambiences</div>
-            <div class="ambience-list">
-                  {#each containers['all'] as item,i}
-                        <div draggable={true}
-                              on:dragstart={event => dragstart(event, 'all', i)}
-                              on:click={select_ambience}
-                              id={item}
-                              class="ambience-list-item"
-                        >
-                              {item}
-                        </div>
-                  {/each}
-            </div>
-      </div>
-      <div class="grid-item" id="panel_editor">
-            <div class="grid-container-title">Editor</div>
-            <AmbienceEditor socket={socket} ambience_name={selected_ambience}/>
-      </div>
+    <!--
+    ACTIVE AMBIENCES PANEL
+    -->
+    <div class="grid-item"
+         id="panel_active"
+         on:drop|preventDefault={event => drop(event, 'active')}
+         ondragover="return false"
+         on:dragenter="{() => hovering = 'active'}"
+         on:dragleave="{() => hovering = null}"
+         class:hovering="{hovering === 'active'}"
+         >
+         <div class="grid-container-title">Active Ambiences</div>
+         <ul class="ambience-list">
+             {#each containers['active'] as item,i}
+                 <li draggable={true}
+                     on:dragstart={event => dragstart(event, 'active', i)}
+                     on:click={select_ambience}
+                     id={item.name}
+                     class="ambience-list-item active-ambience"
+                     >
+                     {item.name}, {item.active}
+                 </li>
+             {/each}
+         </ul>
+    </div>
+
+    <!--
+    INACTIVE AMBIENCES PANEL
+    -->
+    <div class="grid-item"
+         id="panel_all"
+         on:drop|preventDefault={event => drop(event, 'all')}
+         ondragover="return false"
+         on:dragenter="{() => hovering = 'all'}"
+         on:dragleave="{() => hovering = null}"
+         class:hovering="{hovering === 'all'}"
+         >
+         <div class="grid-container-title">All Ambiences</div>
+         <div class="ambience-list">
+             {#each containers['all'] as item,i}
+                 <div draggable={true}
+                      on:dragstart={event => dragstart(event, 'all', i)}
+                      on:click={select_ambience}
+                      id={item.name}
+                      class="ambience-list-item"
+                      >
+                      {item.name}, {item.active}
+                 </div>
+             {/each}
+         </div>
+    </div>
+    <div class="grid-item" id="panel_editor">
+        <div class="grid-container-title">Editor</div>
+        <AmbienceEditor socket={socket}
+                        ambience_name={selected_ambience}
+                        is_active={selected_ambience_is_active}
+                        />
+    </div>
 </div>
 
+<Listener bind:this={listener} socket={socket} room_uuid={room_uuid} />
 <!--
-<MasterControl socket={socket} />
-<AmbienceEditor socket={socket} />
+    <MasterControl socket={socket} />
+    <AmbienceEditor socket={socket} />
 -->
 
 <style>
-      .ambience-list-item {
-            display: block;
-            width: 4em;
-            height: 4em;
-            border: 2px solid;
-            margin: 1em;
-      }
-      .ambience-list {
-            width: 100%;
-            display: flex;
-            flex-wrap: wrap;
-            margin: 0px;
-            margin-top: 1.5em;
-            padding: 0px;
-      }
-      .grid-container {
-            height: 100%;
-            width: 100%;
-            grid-template-areas:
-                  'active editor'
-                  'all all';
+    .ambience-list-item {
+        display: block;
+        width: 4em;
+        height: 4em;
+        border: 2px solid;
+        margin: 1em;
+    }
+    .ambience-list {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0px;
+        margin-top: 1.5em;
+        padding: 0px;
+    }
+    .grid-container {
+        height: 100%;
+        width: 100%;
+        grid-template-areas:
+            'active editor'
+            'all all';
             grid-template-rows: auto 40%;
             grid-template-columns: 20em auto;
             grid-gap: 10px;
             background-color: #eb8034;
             padding: 10px;
             box-sizing: border-box;
-      }
-      .grid-container > div {
-            background-color: #e8a16f;
-            overflow: auto;
-      }
-      .grid-container-title {
-            text-align: left;
-            vertical-align: top;
-            font-size: 1em;
-            position: fixed;
-            background-color: #eb8034;
-            padding: 4px;
-      }
-      #panel_active {
-            grid-area: active;
-      }
-      #panel_all {
-            grid-area: all;
-      }
+    }
+    .grid-container > div {
+        background-color: #e8a16f;
+        overflow: auto;
+    }
+    .grid-container-title {
+        text-align: left;
+        vertical-align: top;
+        font-size: 1em;
+        position: fixed;
+        background-color: #eb8034;
+        padding: 4px;
+    }
+    #panel_active {
+        grid-area: active;
+    }
+    #panel_all {
+        grid-area: all;
+    }
 </style>

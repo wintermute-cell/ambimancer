@@ -1,40 +1,185 @@
 <script>
-      export let socket;
-      export let ambience_name = '';
+    import { Tabs, TabList, TabPanel, Tab } from './tabs/tabs.js';
+    import RangeSlider from "svelte-range-slider-pips";
+    import store_userdata from '../stores/store_userdata.js';
 
-      $: if(ambience_name !== '') {
-            loadAmbienceJson(ambience_name);
-      };
+    export let socket;
+    export let ambience_name = '';
+    export let is_active;
 
-      const sendTest = () => {
-            socket.emit('ambience_edit', {
-                  ambience: 'test',
-                  type: 'music'
+    let uid;
+    store_userdata.subscribe((data) => {
+        uid = data.uid;
+    });
+
+
+    $: if(ambience_name !== '') {
+        loadAmbienceJson(ambience_name);
+    };
+
+
+    // the corresponding checkboxes are bound to these.
+    // the binding is used to enable them to toggle each other.
+    let mus_crossfade_checkbox;
+    let mus_pause_checkbox;
+
+    let current_ambience = null;
+    function loadAmbienceJson(ambience_name) {
+        fetch('./ambience/read?uid=dev_key&ambience_name=' + ambience_name)
+            .then(response => {
+                response.json()
+                    .then(json => {
+                        current_ambience = json;
+                    })
             });
-      }
+    }
 
-      function loadAmbienceJson(ambience_name) {
-            fetch('./ambience/read?uid=dev_key&ambience_name=' + ambience_name)
-                  .then(response => {
-                        response.json()
-                              .then(json => {
-                                    console.log(json);
-                              })
-                  })
-      }
+    // sends a message about the change back to the server to apply to the json.
+    async function writeAmbienceJson(target_string, new_val, to_disk = true) {
+        await new Promise(cb => setTimeout(cb, 1)); // seems to be required for the function to run asyncronously.
+        socket.emit('ambience_edit', {
+            uid: uid,
+            to_disk: to_disk,
+            ambience_name: current_ambience.name,
+            target: target_string,
+            new_val: new_val
+        });
+    }
 
-      function writeAmbienceJson(ambience_name) {
-            // TODO: generate a "json-diff"-like string, to send minimal amount of data back to the server. The server can then also use that data to determine if a live-edit is necessary.
-      }
 </script>
 
 <div class="main-container">
-      <button on:click={sendTest}>Test To Server</button>
+    {#if current_ambience != null}
+        <h2>{current_ambience.name}</h2>
+        <Tabs>
+            <TabList>
+                <Tab>Music</Tab>
+                    <Tab>SFX</Tab>
+            </TabList>
+
+            <TabPanel>
+                <div class="grid-container">
+                    <div class="grid-item" id="panel-tracklist">
+                        <ul>
+                            {#each current_ambience.music.tracks as track}
+                                <li>{track.name}</li>
+                            {/each}
+                        </ul>
+                    </div>
+
+                    <div class="grid-item" id="panel-settings">
+                        <label class="settings-label" for="g-music-vol">General Volume
+                            <RangeSlider
+                                id="g-music-vol"
+                                values={[current_ambience.music.volume]}
+                                min={0} max={1} float step={0.05}
+                                springValues={{stiffness:0.3, damping:1}}
+                                on:change={(e) => {
+                                    if(is_active){
+                                        current_ambience.music.volume = e.detail.value;
+                                        writeAmbienceJson('music.volume', e.detail.value, false);
+                                }
+                                }}
+                                on:stop={(e) => {
+                                    writeAmbienceJson('music.volume', e.detail.value);
+                                }}
+                                />
+                        </label>
+                        <label class="settings-label">Shuffle
+                            <input type="checkbox"
+                                   checked={!!current_ambience.music.shuffle}
+                                   on:change={(e) => {
+                                       const checked_num = e.target.checked ? 1 : 0;
+                                       current_ambience.music.shuffle = checked_num;
+                                       writeAmbienceJson('music.shuffle', checked_num);
+                                   }}
+                                   />
+                        </label>
+                        <label class="settings-label">Crossfade
+                            <input type="checkbox"
+                                   bind:this={mus_crossfade_checkbox}
+                                   checked={!!current_ambience.music.crossfade.active}
+                                   on:change={(e) => {
+                                   const checked_num = e.target.checked ? 1 : 0;
+                                   current_ambience.music.crossfade.active = checked_num;
+                                   writeAmbienceJson('music.crossfade.active', checked_num);
+                                   if (!!current_ambience.music.pause.active){
+                                   mus_pause_checkbox.checked = false;
+                                   current_ambience.music.pause.active = 0;
+                                   writeAmbienceJson('music.pause.active', 0);
+                                   }
+                                   }}
+                            />
+                            {#if !!current_ambience.music.crossfade.active}
+                                <input type="number"
+                                       value={current_ambience.music.crossfade.by_secs}
+                                       on:change={(e) => {
+                                       current_ambience.music.crossfade.by_secs = e.target.value;
+                                       writeAmbienceJson('music.crossfade.by_secs', e.target.value);
+                                       }}
+                                       />
+                            {/if}
+                        </label>
+                        <label class="settings-label">Pause
+                            <input type="checkbox"
+                                   bind:this={mus_pause_checkbox}
+                                   checked={!!current_ambience.music.pause.active}
+                                   on:change={(e) => {
+                                   const checked_num = e.target.checked ? 1 : 0;
+                                   current_ambience.music.pause.active = checked_num;
+                                   writeAmbienceJson('music.pause.active', checked_num);
+                                   if (!!current_ambience.music.crossfade.active){
+                                   mus_crossfade_checkbox.checked = false;
+                                   current_ambience.music.crossfade.active = 0;
+                                   writeAmbienceJson('music.crossfade.active', 0);
+                                   }
+                                   }}
+                            />
+                            {#if !!current_ambience.music.pause.active}
+                                <input type="number"
+                                       value={current_ambience.music.pause.by_secs}
+                                       on:change={(e) => {
+                                       current_ambience.music.pause.by_secs = e.target.value;
+                                       writeAmbienceJson('music.pause.by_secs', e.target.value);
+                                       }}
+                                       />
+                            {/if}
+                        </label>
+                    </div>
+                </div>
+            </TabPanel>
+
+            <TabPanel>
+                <div class="grid-container">
+                    <div class="grid-item" id="panel-tracklist">
+                        <ul>
+                        </ul>
+                    </div>
+
+                    <div class="grid-item" id="panel-settings">
+                    </div>
+                </div>
+            </TabPanel>
+        </Tabs>
+    {/if}
 </div>
 
 <style>
-      .main-container {
-            margin: 1em;
-            margin-top: 2.5em;
-      }
+    .main-container {
+        margin: 1em;
+        margin-top: 2.5em;
+    }
+
+    .grid-container {
+        display: grid;
+        grid-template-areas:
+            'list settings';
+            grid-template-columns: 60% auto;
+    }
+    #panel-tracklist {
+        grid-area: list;
+    }
+    #panel-settings {
+        grid-area: settings;
+    }
 </style>

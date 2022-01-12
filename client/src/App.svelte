@@ -1,6 +1,4 @@
 <script>
-      let socket;
-
       import FrontPage from './components/FrontPage.svelte';
       import AdminPage from './components/AdminPage.svelte';
 
