@@ -48,6 +48,7 @@
 
     // list drag and drop reorder
     let hovering;
+    let sliding = false;
     const drop = (event, target) => {
         event.dataTransfer.dropEffect = 'move';
         const start = parseInt(event.dataTransfer.getData('text/plain'));
@@ -62,8 +63,6 @@
         }
         current_ambience.music.tracks = newTrackList;
         hovering = null;
-
-        console.log(current_ambience.music.tracks);
     }
 
     const dragStart = (event, i) => {
@@ -90,15 +89,21 @@
                         <ul>
                             {#each current_ambience.music.tracks as track, index}
                                 <div
-                                    class='list-item'
-                                    draggable={true}
-                                    on:dragstart={event => dragStart(event, index)}
+                                    class='track-list-item'
+                                    draggable={!sliding}
+                                    on:dragstart|self={event => dragStart(event, index)}
                                     on:drop|preventDefault={event => drop(event, index)}
                                     ondragover='return false'
-                                    on:dragenter={() => hovering = index}
+                                    on:dragenter|self={() => hovering = index}
                                     class:is-active={hovering === index}
                                     >
                                     {track.name}
+                                    <div style="width: 12em;">
+                                        <RangeSlider on:start={() => {
+                                                     sliding=true; }}
+                                                     on:stop={() => {
+                                                     sliding=false; }}/>
+                                    </div>
                                 </div>
                             {/each}
                         </ul>
@@ -218,5 +223,12 @@
     }
     #panel-settings {
         grid-area: settings;
+    }
+    .track-list-item {
+        display: flex;
+        padding: 0.5em 1em;
+        border-style: inset;
+        border-color: #EB8034;
+        border-radius: 4px;
     }
 </style>
