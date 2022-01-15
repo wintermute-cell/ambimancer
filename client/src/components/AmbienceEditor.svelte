@@ -46,6 +46,33 @@
         });
     }
 
+    // list drag and drop reorder
+    let hovering;
+    const drop = (event, target) => {
+        event.dataTransfer.dropEffect = 'move';
+        const start = parseInt(event.dataTransfer.getData('text/plain'));
+        const newTrackList = current_ambience.music.tracks;
+
+        if (start < target) {
+            newTrackList.splice(target + 1, 0, newTrackList[start]);
+            newTrackList.splice(start, 1);
+        } else {
+            newTrackList.splice(target, 0, newTrackList[start]);
+            newTrackList.splice(start + 1, 1);
+        }
+        current_ambience.music.tracks = newTrackList;
+        hovering = null;
+
+        console.log(current_ambience.music.tracks);
+    }
+
+    const dragStart = (event, i) => {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.dropEffect = 'move';
+        const start = i;
+        event.dataTransfer.setData('text/plain', start);
+    }
+
 </script>
 
 <div class="main-container">
@@ -61,8 +88,18 @@
                 <div class="grid-container">
                     <div class="grid-item" id="panel-tracklist">
                         <ul>
-                            {#each current_ambience.music.tracks as track}
-                                <li>{track.name}</li>
+                            {#each current_ambience.music.tracks as track, index}
+                                <div
+                                    class='list-item'
+                                    draggable={true}
+                                    on:dragstart={event => dragStart(event, index)}
+                                    on:drop|preventDefault={event => drop(event, index)}
+                                    ondragover='return false'
+                                    on:dragenter={() => hovering = index}
+                                    class:is-active={hovering === index}
+                                    >
+                                    {track.name}
+                                </div>
                             {/each}
                         </ul>
                     </div>
