@@ -2,6 +2,7 @@
     import { Tabs, TabList, TabPanel, Tab } from './tabs/tabs.js';
     import RangeSlider from "svelte-range-slider-pips";
     import store_userdata from '../stores/store_userdata.js';
+    import Modal from './Modal.svelte'
 
     export let socket;
     export let ambience_name = '';
@@ -64,7 +65,6 @@
         current_ambience.music.tracks = newTrackList;
         hovering = null;
     }
-
     const dragStart = (event, i) => {
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.dropEffect = 'move';
@@ -72,7 +72,54 @@
         event.dataTransfer.setData('text/plain', start);
     }
 
+    // file selection for new tracks
+    let fileselectorOpen = false;
+    const chooseTrack = () => {
+        fileselectorOpen = true;
+    }
+
+    let TESTavailablefiles = [
+        'filename1',
+        'filename2',
+        'filename3',
+        'filename4',
+        'filename5',
+        'filename1',
+        'filename1',
+        'filename1',
+        'filename2',
+        'filename3',
+        'filename4',
+        'filename5',
+        'filename2',
+        'filename3',
+        'filename4',
+        'filename5',
+        'filename2',
+        'filename3',
+        'filename4',
+        'filename5'
+    ]
+
 </script>
+
+<Modal bind:isOpen={fileselectorOpen}>
+    <div slot='header'>
+      <h3>Choose a Track</h3>
+    </div>
+    <div slot='content'>
+        <ul>
+            {#each TESTavailablefiles as file}
+                <div>
+                    {file}
+                </div>
+            {/each}
+        </ul>
+    </div>
+    <div slot='footer'>
+
+    </div>
+</Modal>
 
 <div class="main-container">
     {#if current_ambience != null}
@@ -97,8 +144,9 @@
                                     on:dragenter|self={() => hovering = index}
                                     class:is-active={hovering === index}
                                     >
-                                    {track.name}
-                                    <div style="width: 12em;">
+                                    {index}
+                                    <button on:click={chooseTrack}>{track.name}</button>
+                                    <div class="track-list-item-slider">
                                         <RangeSlider on:start={() => {
                                                      sliding=true; }}
                                                      on:stop={() => {
@@ -220,15 +268,22 @@
     }
     #panel-tracklist {
         grid-area: list;
+        overflow: scroll;
+        overflow: hidden;
     }
     #panel-settings {
         grid-area: settings;
     }
     .track-list-item {
+        text-align: center;
         display: flex;
+        width: 42em;
         padding: 0.5em 1em;
         border-style: inset;
         border-color: #EB8034;
         border-radius: 4px;
+    }
+    .track-list-item-slider {
+        width: 12em;
     }
 </style>
