@@ -2,6 +2,7 @@ from .ambience_manager import get_by_uid
 from definitions import ROOT_DIR
 import os
 from threading import Lock
+import json
 
 thread_lock = Lock()
 
@@ -33,36 +34,31 @@ def init(socketio):
         # write change to disk only if requested.
         if msg['to_disk']:
             # load the file into a list of lines.
-            lines = None
+            ambi_obj = None
             with open(fpath) as file:
-                lines = file.readlines()
+                ambi_obj = json.load(file)
 
-            # find the target line and replace it in the list.
-            target_idx = 0
-            line_num = 1
-            for line in lines:
-                processed = line.strip().split('\"')
-                # make sure the line actually contains a key.
-                if(len(processed) > 1):
-                    key = processed[1]
-                    if key == target_path[target_idx]:
-                        # check if final step is reached.
-                        # If so, line_num is correct.
-                        if target_idx == len(target_path)-1:
-                            # make sure to append a ',' if required.
-                            trailing_comma = ''
-                            if line.strip().endswith(','):
-                                trailing_comma = ','
-                            # reconstruct the line with the new value,
-                            # and then end.
-                            lines[line_num-1] =\
-                                line.split(':')[0] +\
-                                ':' + str(msg['new_val']) +\
-                                trailing_comma + '\n'
-                            break
+            def update_value(obj, step_idx=0):
+                for key, val in obj.copy().items():
+                    if target_path[step_idx] == key:
+                        if key == 'tracks' or key == 'layers':
+                            for idx, itm in enumerate(val.copy()):
+                                if itm['name'] == target_path[step_idx+1]:
+                                    obj[key].append(
+                                        update_value(itm, step_idx+2))
+                                    del obj[key][idx]
+
+                        if isinstance(val, dict):
+                            obj[key] = update_value(val, step_idx+1)
+                        elif isinstance(val, list):
+                            obj[key] = [
+                                update_value(i, step_idx+1) for i in val
+                            ]
                         else:
-                            target_idx += 1
-                line_num += 1
+                            obj[key] = str(msg['new_val'])
+                return obj
+
+            ambi_obj = update_value(ambi_obj)
 
             # thread lock the file access to make sure only one thread at
             # a time is writing to the file.
@@ -70,5 +66,4 @@ def init(socketio):
             with thread_lock:
                 # write the list of lines back to the file.
                 with open(fpath, 'w') as file:
-                    for line in lines:
-                        file.write(line)
+                    json.dump(ambi_obj, file)

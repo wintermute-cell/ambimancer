@@ -147,10 +147,23 @@
                                     {index}
                                     <button on:click={chooseTrack}>{track.name}</button>
                                     <div class="track-list-item-slider">
-                                        <RangeSlider on:start={() => {
-                                                     sliding=true; }}
-                                                     on:stop={() => {
-                                                     sliding=false; }}/>
+                                        <RangeSlider
+                                            id="track-music-vol"
+                                            values={[track.volume]}
+                                            min={0} max={1} float step={0.05}
+                                            springValues={{stiffness:0.3, damping:1}}
+                                            on:change={(e) => {
+                                            sliding = true;
+                                                if(is_active){
+                                                    track.volume = e.detail.value;
+                                                    writeAmbienceJson(`music.tracks.${track.name}.volume`, e.detail.value, false);
+                                            }
+                                            }}
+                                            on:stop={(e) => {
+                                                sliding = false;
+                                                writeAmbienceJson(`music.tracks.${track.name}.volume`, e.detail.value);
+                                            }}
+                                            />
                                     </div>
                                 </div>
                             {/each}
