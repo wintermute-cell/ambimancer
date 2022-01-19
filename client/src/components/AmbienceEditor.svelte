@@ -127,12 +127,12 @@
         <Tabs>
             <TabList>
                 <Tab>Music</Tab>
-                    <Tab>SFX</Tab>
+                <Tab>SFX</Tab>
             </TabList>
 
             <TabPanel>
-                <div class="grid-container">
-                    <div class="grid-item" id="panel-tracklist">
+                <div class="music-grid-container">
+                    <div class="grid-item" id="music-panel-tracklist">
                         <ul>
                             {#each current_ambience.music.tracks as track, index}
                                 <div
@@ -170,7 +170,7 @@
                         </ul>
                     </div>
 
-                    <div class="grid-item" id="panel-settings">
+                    <div class="grid-item" id="music-panel-settings">
                         <label class="settings-label" for="g-music-vol">General Volume
                             <RangeSlider
                                 id="g-music-vol"
@@ -253,13 +253,17 @@
             </TabPanel>
 
             <TabPanel>
-                <div class="grid-container">
-                    <div class="grid-item" id="panel-tracklist">
-                        <ul>
-                        </ul>
+                <div class="sfx-grid-container">
+                    <div class="grid-item" id="sfx-panel-layerlist">
+                        hellow here is layers
                     </div>
 
-                    <div class="grid-item" id="panel-settings">
+                    <div class="grid-item" id="sfx-panel-tracklist">
+                        hellow here is track
+                    </div>
+
+                    <div class="grid-item" id="sfx-panel-settings">
+                        hellow her is settings
                     </div>
                 </div>
             </TabPanel>
@@ -273,20 +277,41 @@
         margin-top: 2.5em;
     }
 
-    .grid-container {
+    .music-grid-container {
         display: grid;
         grid-template-areas:
             'list settings';
-            grid-template-columns: 60% auto;
+        grid-template-columns: 60% auto;
     }
-    #panel-tracklist {
+    #music-panel-tracklist {
         grid-area: list;
         overflow: scroll;
         overflow: hidden;
     }
-    #panel-settings {
+    #music-panel-settings {
         grid-area: settings;
     }
+
+    .sfx-grid-container {
+        display: grid;
+        grid-template-areas:
+            'layer tracks settings';
+        grid-template-columns: 20% auto auto;
+    }
+    #sfx-panel-layerlist {
+        grid-area: layer;
+        overflow: scroll;
+        overflow: hidden;
+    }
+    #sfx-panel-tracklist {
+        grid-area: tracks;
+        overflow: scroll;
+        overflow: hidden;
+    }
+    #sfx-panel-settings {
+        grid-area: settings;
+    }
+
     .track-list-item {
         text-align: center;
         display: flex;
