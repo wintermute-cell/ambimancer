@@ -38,6 +38,8 @@ def init(socketio):
             with open(fpath) as file:
                 ambi_obj = json.load(file)
 
+            # recursive function to find and replace the correct value
+            # according to the target_path
             def update_value(obj, step_idx=0):
                 for key, val in obj.copy().items():
                     if target_path[step_idx] == key:
