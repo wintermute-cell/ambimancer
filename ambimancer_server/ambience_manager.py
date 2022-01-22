@@ -316,6 +316,7 @@ def run_new_instance(socketio, room_uuid, uid):
 
     if uid in ambience_managers:
         print(f'An ambience manager already exists for uid {uid}!')
+        return
 
     print(f'Running new ambience manager for uid {uid} and\
           room_uuid {room_uuid}.')

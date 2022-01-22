@@ -255,7 +255,39 @@
             <TabPanel>
                 <div class="sfx-grid-container">
                     <div class="grid-item" id="sfx-panel-layerlist">
-                        hellow here is layers
+                        {#each current_ambience.sfx.layers as layer, index}
+                            <div
+                                class='sfx-layer-list-item'
+                                draggable={!sliding}
+                                on:dragstart|self={event => dragStart(event, index)}
+                                on:drop|preventDefault={event => drop(event, index)}
+                                ondragover='return false'
+                                on:dragenter|self={() => hovering = index}
+                                class:is-active={hovering === index}
+                                >
+                                {index}
+                                <button on:click={() => {}}>{layer.name}</button>
+                                <div class="sfx-layer-list-item-slider">
+                                    <RangeSlider
+                                        id="sfx-layer-vol"
+                                        values={[layer.volume]}
+                                        min={0} max={1} float step={0.05}
+                                        springValues={{stiffness:0.3, damping:1}}
+                                        on:change={(e) => {
+                                        sliding = true;
+                                        if(is_active){
+                                        layer.volume = e.detail.value;
+                                        writeAmbienceJson(`sfx.layers.${layer.name}.volume`, e.detail.value, false);
+                                        }
+                                        }}
+                                        on:stop={(e) => {
+                                        sliding = false;
+                                        writeAmbienceJson(`sfx.layers.${layer.name}.volume`, e.detail.value);
+                                        }}
+                                        />
+                                </div>
+                            </div>
+                        {/each}
                     </div>
 
                     <div class="grid-item" id="sfx-panel-tracklist">
@@ -317,11 +349,23 @@
         display: flex;
         width: 42em;
         padding: 0.5em 1em;
-        border-style: inset;
+        border-style: outset;
         border-color: #EB8034;
         border-radius: 4px;
     }
     .track-list-item-slider {
         width: 12em;
+    }
+
+    .sfx-layer-list-item {
+        margin: 0.5em;
+        border-left: outset;
+        border-bottom: outset;
+        border-top: outset;
+        border-left: outset;
+        border-color: #EB8034;
+        border-radius: 4px;
+        border-top-right-radius: 0px;
+        border-bottom-right-radius: 0px;
     }
 </style>
