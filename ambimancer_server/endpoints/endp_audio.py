@@ -10,7 +10,6 @@ bp = Blueprint('audio', __name__)
 @bp.route('/audio/ogg/<room>/<type>/<aud_id>')
 def streamogg(room, type, aud_id):
     def generate():
-        print(room_uuid_to_uid)
         uid = room_uuid_to_uid[room]
         fpath = os.path.join(ROOT_DIR, f'file/{uid}/audio/{type}/{aud_id}.ogg')
         with open(fpath, "rb") as fogg:

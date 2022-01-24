@@ -21,51 +21,34 @@
 
     let hovering = false;
     let containers = {
-        'active': [
-            {
-                name: 'ambi1',
-                active: true
-            },
-            {
-                name: 'ambi2',
-                active: true
-            }
-        ],
-        'all': [
-            {
-                name: 'ambi3',
-                active: false
-            },
-            {
-                name: 'ambi4',
-                active: false
-            },
-            {
-                name: 'ambi5',
-                active: false
-            },
-            {
-                name: 'ambi6',
-                active: false
-            },
-            {
-                name: 'ambi7',
-                active: false
-            },
-            {
-                name: 'ambi8',
-                active: false
-            },
-            {
-                name: 'ambi9',
-                active: false
-            },
-            {
-                name: 'ambi10',
-                active: false
-            }
-        ]
+        'active': [],
+        'all': []
     }
+
+    function getAmbienceNames(){
+        fetch('./ambience/list?uid=dev_key')
+            .then(response => {
+                response.json()
+                    .then(json => {
+                        console.log(json)
+                        for (const name of json['ambience_names']) {
+                            console.log(name)
+                            containers['all'].push({
+                                name: name,
+                                active: false
+                            })
+                            // trigger svelte reactivity through assignment
+                            containers['all'] = containers['all']
+                        }
+                    })
+            });
+    }
+
+    getAmbienceNames();
+    console.log(containers)
+
+
+    // music track drag and drop
     function dragstart(event, container_name, item_idx) {
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.dropEffect = 'move';
@@ -76,7 +59,6 @@
         };
         event.dataTransfer.setData('text/plain', JSON.stringify(obj));
     };
-
     function drop(event, new_container_name) {
         event.dataTransfer.dropEffect = 'move';
         let json_obj = event.dataTransfer.getData('text/plain');
@@ -102,6 +84,7 @@
         }
     };
 
+    // activating ambience for editor
     let selected_ambience = '';
     let selected_ambience_is_active;
     function select_ambience(event) {

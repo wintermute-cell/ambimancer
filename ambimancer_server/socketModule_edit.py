@@ -31,42 +31,52 @@ def init(socketio):
                 # TODO make the liveedit
                 break
 
-        # write change to disk only if requested.
-        if msg['to_disk']:
-            # load the file into a list of lines.
-            ambi_obj = None
-            with open(fpath) as file:
-                ambi_obj = json.load(file)
+        # thread lock the file access to make sure only one thread at
+        # a time is writing to the file, and no thread reads
+        # while another one is writing.
+        global thread_lock
+        with thread_lock:
+            # write change to disk only if requested.
+            if msg['to_disk']:
+                # load the file into a list of lines.
+                ambi_obj = None
+                with open(fpath) as file:
+                    ambi_obj = json.load(file)
 
-            # recursive function to find and replace the correct value
-            # according to the target_path
-            def update_value(obj, step_idx=0):
-                for key, val in obj.copy().items():
-                    if target_path[step_idx] == key:
-                        if key == 'tracks' or key == 'layers':
-                            for idx, itm in enumerate(val.copy()):
-                                if itm['name'] == target_path[step_idx+1]:
-                                    obj[key].insert(
-                                        idx,
-                                        update_value(itm, step_idx+2))
-                                    del obj[key][idx+1]
+                # recursive function to find and replace the correct value
+                # according to the target_path
+                def update_value(obj, step_idx=0):
+                    for key, val in obj.copy().items():
+                        if target_path[step_idx] == key:
+                            if key == 'tracks' or key == 'layers':
+                                for idx, itm in enumerate(val.copy()):
+                                    if itm['name'] == target_path[step_idx+1]:
+                                        obj[key].insert(
+                                            idx,
+                                            update_value(itm, step_idx+2))
+                                        del obj[key][idx+1]
+                            elif key == 'interval':
+                                obj[key] = msg['new_val']
+                                return obj
 
-                        if isinstance(val, dict):
-                            obj[key] = update_value(val, step_idx+1)
-                        elif isinstance(val, list):
-                            obj[key] = [
-                                update_value(i, step_idx+1) for i in val
-                            ]
-                        else:
-                            obj[key] = str(msg['new_val'])
-                return obj
+                            if isinstance(val, dict):
+                                obj[key] = update_value(val, step_idx+1)
+                            elif isinstance(val, list):
+                                obj[key] = [
+                                    update_value(i, step_idx+1) for i in val
+                                ]
+                            else:
+                                obj[key] = msg['new_val']
+                    return obj
 
-            ambi_obj = update_value(ambi_obj)
+                if target_path[0] == 'reorder_music_track':
+                    ambi_obj['music']['tracks'][msg['new_val'][0]],\
+                        ambi_obj['music']['tracks'][msg['new_val'][1]] =\
+                        ambi_obj['music']['tracks'][msg['new_val'][1]],\
+                        ambi_obj['music']['tracks'][msg['new_val'][0]],
+                else:
+                    ambi_obj = update_value(ambi_obj)
 
-            # thread lock the file access to make sure only one thread at
-            # a time is writing to the file.
-            global thread_lock
-            with thread_lock:
                 # write the list of lines back to the file.
                 with open(fpath, 'w') as file:
                     json.dump(ambi_obj, file)

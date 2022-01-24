@@ -1,5 +1,5 @@
 from definitions import ROOT_DIR, EMITTER_TICK
-import os.path
+import os
 import json
 import threading
 from time import perf_counter
@@ -224,6 +224,12 @@ class AmbienceManager():
         fpath = os.path.join(ROOT_DIR, f'file/{self.uid}/ambience/{name}.json')
         with open(fpath) as file:
             return file.read()
+
+    def ambience_load_list(self):
+        fpath = os.path.join(ROOT_DIR, f'file/{self.uid}/ambience/')
+        ls = os.listdir(fpath)
+        ambience_names = [f.split('.')[0] for f in ls]
+        return ambience_names
 
     def ambience_emitter(self, *args):
         socketio = args[0]

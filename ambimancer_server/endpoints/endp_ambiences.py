@@ -15,6 +15,10 @@ def read():
     return ambience_json
 
 
-@bp.route('/ambience/write')
-def write():
-    return {}
+@bp.route('/ambience/list')
+def list():
+    uid = request.args.get('uid')
+    ambience_names = ambience_manager.get_by_uid(uid).ambience_load_list()
+    return {
+        'ambience_names': ambience_names
+    }

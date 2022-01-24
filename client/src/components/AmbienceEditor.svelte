@@ -63,7 +63,7 @@
             newTrackList.splice(start + 1, 1);
         }
         current_ambience.music.tracks = newTrackList;
-        // TODO: send reordered list to server.
+        writeAmbienceJson('reorder_music_track', [start, target])
         hovering = null;
     }
     const dragStart = (event, i) => {
@@ -231,7 +231,7 @@
                                        value={current_ambience.music.crossfade.by_secs}
                                        on:change={(e) => {
                                        current_ambience.music.crossfade.by_secs = e.target.value;
-                                       writeAmbienceJson('music.crossfade.by_secs', e.target.value);
+                                       writeAmbienceJson('music.crossfade.by_secs', parseFloat(e.target.value));
                                        }}
                                        />
                             {/if}
@@ -256,7 +256,7 @@
                                        value={current_ambience.music.pause.by_secs}
                                        on:change={(e) => {
                                        current_ambience.music.pause.by_secs = e.target.value;
-                                       writeAmbienceJson('music.pause.by_secs', e.target.value);
+                                       writeAmbienceJson('music.pause.by_secs', parseFloat(e.target.value));
                                        }}
                                        />
                             {/if}
@@ -282,7 +282,6 @@
                                         min={0} max={1} float step={0.05}
                                         springValues={{stiffness:0.3, damping:1}}
                                         on:change={(e) => {
-                                        sliding = true;
                                         if(is_active){
                                         layer.volume = e.detail.value;
                                         writeAmbienceJson(`sfx.layers.${layer.name}.volume`, e.detail.value, false);
@@ -293,6 +292,25 @@
                                         writeAmbienceJson(`sfx.layers.${layer.name}.volume`, e.detail.value);
                                         }}
                                         />
+                                    <!-- TODO: Maybe add toggle to set interval to minutes instead of seconds-->
+                                    <RangeSlider
+                                        id="sfx-layer-interval"
+                                        values={layer.interval}
+                                        range
+                                        pushy
+                                        min={0} max={120} float step={1}
+                                        springValues={{stiffness:0.3, damping:1}}
+                                        on:change={(e) => {
+                                        if(is_active){
+                                        layer.interval = e.detail.values;
+                                        writeAmbienceJson(`sfx.layers.${layer.name}.interval`, e.detail.values, false);
+                                        }
+                                        }}
+                                        on:stop={(e) => {
+                                        sliding = false;
+                                        writeAmbienceJson(`sfx.layers.${layer.name}.interval`, e.detail.values);
+                                        }}
+                                        />
                                 </div>
                             </div>
                         {/each}
@@ -301,15 +319,7 @@
                     <div class="grid-item" id="sfx-panel-tracklist">
                         {#if active_sfx_layer_idx != null}
                         {#each current_ambience.sfx.layers[active_sfx_layer_idx].tracks as track, index}
-                            <div
-                                class='track-list-item'
-                                draggable={!sliding}
-                                on:dragstart|self={event => dragStart(event, index)}
-                                on:drop|preventDefault={event => drop(event, index)}
-                                ondragover='return false'
-                                on:dragenter|self={() => hovering = index}
-                                class:is-active={hovering === index}
-                                >
+                            <div class='track-list-item'>
                                 {index}
                                 <button on:click={() => {chooseFile('sfx')}}>
                                     {track.name}
@@ -323,9 +333,6 @@
                                         values={[track.volume]}
                                         min={0} max={1} float step={0.05}
                                         springValues={{stiffness:0.3, damping:1}}
-                                        on:start={() => {
-                                        sliding = true;
-                                        }}
                                         on:change={(e) => {
                                         if(is_active){
                                         track.volume = e.detail.value;
@@ -366,10 +373,6 @@
                         {/each}
                         {/if}
                     </div>
-
-                    <div class="grid-item" id="sfx-panel-settings">
-                        hellow here is settings
-                    </div>
                 </div>
             </TabPanel>
         </Tabs>
@@ -400,8 +403,8 @@
     .sfx-grid-container {
         display: grid;
         grid-template-areas:
-            'layer tracks settings';
-        grid-template-columns: 20% auto auto;
+            'layer tracks';
+        grid-template-columns: 50% auto;
     }
     #sfx-panel-layerlist {
         grid-area: layer;
@@ -412,9 +415,6 @@
         grid-area: tracks;
         overflow: scroll;
         overflow: hidden;
-    }
-    #sfx-panel-settings {
-        grid-area: settings;
     }
 
     .track-list-item {
