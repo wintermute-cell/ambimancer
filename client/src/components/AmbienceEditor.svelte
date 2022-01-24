@@ -63,6 +63,7 @@
             newTrackList.splice(start + 1, 1);
         }
         current_ambience.music.tracks = newTrackList;
+        // TODO: send reordered list to server.
         hovering = null;
     }
     const dragStart = (event, i) => {
@@ -72,12 +73,21 @@
         event.dataTransfer.setData('text/plain', start);
     }
 
+    // sfx editor
+    let active_sfx_layer_idx = null;
+
     // file selection for new tracks
     let fileselectorOpen = false;
-    const chooseTrack = () => {
-        fileselectorOpen = true;
+    let filetype = '';
+    const chooseFile = (type) => {
+        if (type === 'music') {
+            fileselectorOpen = true;
+            filetype = type;
+        } else if (type === 'sfx') {
+            fileselectorOpen = true;
+            filetype = type;
+        }
     }
-
     let TESTavailablefiles = [
         'filename1',
         'filename2',
@@ -100,7 +110,6 @@
         'filename4',
         'filename5'
     ]
-
 </script>
 
 <Modal bind:isOpen={fileselectorOpen}>
@@ -145,15 +154,19 @@
                                     class:is-active={hovering === index}
                                     >
                                     {index}
-                                    <button on:click={chooseTrack}>{track.name}</button>
+                                    <button on:click={() => {chooseFile('music')}}>
+                                        {track.name}
+                                    </button>
                                     <div class="track-list-item-slider">
                                         <RangeSlider
-                                            id="track-music-vol"
+                                            id="volume-slider"
                                             values={[track.volume]}
                                             min={0} max={1} float step={0.05}
                                             springValues={{stiffness:0.3, damping:1}}
+                                            on:start={() => {
+                                                sliding = true;
+                                            }}
                                             on:change={(e) => {
-                                            sliding = true;
                                                 if(is_active){
                                                     track.volume = e.detail.value;
                                                     writeAmbienceJson(`music.tracks.${track.name}.volume`, e.detail.value, false);
@@ -251,23 +264,18 @@
                     </div>
                 </div>
             </TabPanel>
-
             <TabPanel>
                 <div class="sfx-grid-container">
                     <div class="grid-item" id="sfx-panel-layerlist">
                         {#each current_ambience.sfx.layers as layer, index}
-                            <div
-                                class='sfx-layer-list-item'
-                                draggable={!sliding}
-                                on:dragstart|self={event => dragStart(event, index)}
-                                on:drop|preventDefault={event => drop(event, index)}
-                                ondragover='return false'
-                                on:dragenter|self={() => hovering = index}
-                                class:is-active={hovering === index}
-                                >
+                            <div class='sfx-layer-list-item'
+                                 on:click|self={(e) => {
+                                     active_sfx_layer_idx = index;
+                                 }}
+                                 >
                                 {index}
-                                <button on:click={() => {}}>{layer.name}</button>
-                                <div class="sfx-layer-list-item-slider">
+                                <input type="text" placeholder={layer.name}>
+                                <div class="sfx-layer-list-item-slider" >
                                     <RangeSlider
                                         id="sfx-layer-vol"
                                         values={[layer.volume]}
@@ -291,11 +299,76 @@
                     </div>
 
                     <div class="grid-item" id="sfx-panel-tracklist">
-                        hellow here is track
+                        {#if active_sfx_layer_idx != null}
+                        {#each current_ambience.sfx.layers[active_sfx_layer_idx].tracks as track, index}
+                            <div
+                                class='track-list-item'
+                                draggable={!sliding}
+                                on:dragstart|self={event => dragStart(event, index)}
+                                on:drop|preventDefault={event => drop(event, index)}
+                                ondragover='return false'
+                                on:dragenter|self={() => hovering = index}
+                                class:is-active={hovering === index}
+                                >
+                                {index}
+                                <button on:click={() => {chooseFile('sfx')}}>
+                                    {track.name}
+                                </button>
+                                <div class="track-list-item-slider">
+                                    <div>
+                                        V
+                                    </div>
+                                    <RangeSlider
+                                        id="volume-slider"
+                                        values={[track.volume]}
+                                        min={0} max={1} float step={0.05}
+                                        springValues={{stiffness:0.3, damping:1}}
+                                        on:start={() => {
+                                        sliding = true;
+                                        }}
+                                        on:change={(e) => {
+                                        if(is_active){
+                                        track.volume = e.detail.value;
+                                        writeAmbienceJson(`sfx.layers.${current_ambience.sfx.layers[active_sfx_layer_idx].name}.tracks.${track.name}.volume`, e.detail.value, false);
+                                        }
+                                        }}
+                                        on:stop={(e) => {
+                                        sliding = false;
+                                        writeAmbienceJson(`sfx.layers.${current_ambience.sfx.layers[active_sfx_layer_idx].name}.tracks.${track.name}.volume`, e.detail.value);
+                                        }}
+                                        />
+                                </div>
+                                <div class="track-list-item-slider">
+                                    <div>
+                                        C
+                                    </div>
+                                    <RangeSlider
+                                        id="volume-slider"
+                                        values={[track.chance]}
+                                        min={0} max={1} float step={0.05}
+                                        springValues={{stiffness:0.3, damping:1}}
+                                        on:start={() => {
+                                        sliding = true;
+                                        }}
+                                        on:change={(e) => {
+                                        if(is_active){
+                                        track.chance = e.detail.value;
+                                        writeAmbienceJson(`sfx.layers.${current_ambience.sfx.layers[active_sfx_layer_idx].name}.tracks.${track.name}.chance`, e.detail.value, false);
+                                        }
+                                        }}
+                                        on:stop={(e) => {
+                                        sliding = false;
+                                        writeAmbienceJson(`sfx.layers.${current_ambience.sfx.layers[active_sfx_layer_idx].name}.tracks.${track.name}.chance`, e.detail.value);
+                                        }}
+                                        />
+                                </div>
+                            </div>
+                        {/each}
+                        {/if}
                     </div>
 
                     <div class="grid-item" id="sfx-panel-settings">
-                        hellow her is settings
+                        hellow here is settings
                     </div>
                 </div>
             </TabPanel>
@@ -352,6 +425,7 @@
         border-style: outset;
         border-color: #EB8034;
         border-radius: 4px;
+        margin: 0.5em;
     }
     .track-list-item-slider {
         width: 12em;

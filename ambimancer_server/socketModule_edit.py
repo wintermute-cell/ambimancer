@@ -46,9 +46,10 @@ def init(socketio):
                         if key == 'tracks' or key == 'layers':
                             for idx, itm in enumerate(val.copy()):
                                 if itm['name'] == target_path[step_idx+1]:
-                                    obj[key].append(
+                                    obj[key].insert(
+                                        idx,
                                         update_value(itm, step_idx+2))
-                                    del obj[key][idx]
+                                    del obj[key][idx+1]
 
                         if isinstance(val, dict):
                             obj[key] = update_value(val, step_idx+1)
