@@ -21,8 +21,8 @@ class Config:
     # Settings applicable to all environments
     SECRET_KEY = os.getenv('SECRET_KEY', default='devkey')
 
-    AUTH0_LOGOUT_URL = './auth/logout'
-    AUTH0_CALLBACK_URL = './auth/callback'
+    # Max upload size is 10MB
+    MAX_CONTENT_LENGTH = 1024 * 1024 * 10
 
 
 class DevelopmentConfig(Config):

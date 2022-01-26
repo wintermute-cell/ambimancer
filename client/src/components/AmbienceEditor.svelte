@@ -9,8 +9,10 @@
     export let is_active;
 
     let uid;
+    let room_uuid;
     store_userdata.subscribe((data) => {
         uid = data.uid;
+        room_uuid = data.room_uuid;
     });
 
 
@@ -76,56 +78,113 @@
     // sfx editor
     let active_sfx_layer_idx = null;
 
+
     // file selection for new tracks
-    let fileselectorOpen = false;
-    let filetype = '';
-    const chooseFile = (type) => {
+    let filenamesMusic = []
+    let filenamesSfx = []
+    function getFilenames(type) {
         if (type === 'music') {
-            fileselectorOpen = true;
-            filetype = type;
-        } else if (type === 'sfx') {
-            fileselectorOpen = true;
-            filetype = type;
+            fetch('./audio/getfilenames?type=music&room=' + room_uuid)
+                .then(response => {
+                    response.json()
+                        .then(json => {
+                            filenamesMusic = json.names;
+                        })
+                });
+        }
+        else if (type === 'sfx'){
+            fetch('./audio/getfilenames?type=sfx&room=' + room_uuid)
+                .then(response => {
+                    response.json()
+                        .then(json => {
+                            filenamesSfx = json.names;
+                        })
+                });
+
+        }
+        else {
+            console.log('ERROR: tried to run "getFilenames()" for an invalid type!');
         }
     }
-    let TESTavailablefiles = [
-        'filename1',
-        'filename2',
-        'filename3',
-        'filename4',
-        'filename5',
-        'filename1',
-        'filename1',
-        'filename1',
-        'filename2',
-        'filename3',
-        'filename4',
-        'filename5',
-        'filename2',
-        'filename3',
-        'filename4',
-        'filename5',
-        'filename2',
-        'filename3',
-        'filename4',
-        'filename5'
-    ]
+    let fileselectorOpen = false;
+    let fileSelectorType = '';
+    const chooseFile = (type) => {
+        getFilenames(type);
+        if (type === 'music') {
+            fileselectorOpen = true;
+            fileSelectorType = type;
+        } else if (type === 'sfx') {
+            fileselectorOpen = true;
+            fileSelectorType = type;
+        }
+    }
+    function uploadFiles(e, type) {
+        let formData = new FormData();
+        let files = e.target.files;
+
+
+        formData.append('type', type);
+        formData.append('room_uuid', room_uuid);
+
+        for (let f of files) {
+            formData.append('file', f, f.name);
+        }
+
+        for (let en of formData.entries()){
+            console.log(en)
+        }
+
+        fetch('./audio/upload', {
+            method: 'POST',
+            body: formData
+        }).then((response) => response.json()).then((result) => {
+            console.log(result);
+        })
+
+    }
 </script>
 
 <Modal bind:isOpen={fileselectorOpen}>
     <div slot='header'>
-      <h3>Choose a Track</h3>
+        {#if fileSelectorType === 'music'}
+            <h3>Choose a Music Track</h3>
+        {/if}
+        {#if fileSelectorType === 'sfx'}
+            <h3>Choose an Sfx Track</h3>
+        {/if}
     </div>
     <div slot='content'>
         <ul>
-            {#each TESTavailablefiles as file}
-                <div>
-                    {file}
-                </div>
-            {/each}
+            {#if fileSelectorType === 'music'}
+                {#each filenamesMusic as filename}
+                    <div>
+                        {filename}
+                    </div>
+                {/each}
+            {/if}
+            {#if fileSelectorType === 'sfx'}
+                {#each filenamesSfx as filename}
+                    <div>
+                        {filename}
+                    </div>
+                {/each}
+            {/if}
         </ul>
     </div>
     <div slot='footer'>
+        <h3>Upload File</h3>
+        {#if fileSelectorType === 'music'}
+        <input type="file"
+               accept='.ogg, .mp3, .wav'
+               on:change={(e) => {uploadFiles(e, 'music')}}
+               >
+        {/if}
+        {#if fileSelectorType === 'sfx'}
+        <input type="file"
+               accept='.ogg, .mp3, .wav'
+               on:change={(e) => {uploadFiles(e, 'sfx')}}
+               >
+        {/if}
 
     </div>
 </Modal>
@@ -180,6 +239,12 @@
                                     </div>
                                 </div>
                             {/each}
+                            <div class='track-list-item'>
+                                <button on:click={() => {chooseFile('music')}}>
+                                    +
+                                </button>
+                                Insert new track.
+                            </div>
                         </ul>
                     </div>
 
@@ -371,6 +436,12 @@
                                 </div>
                             </div>
                         {/each}
+                        <div class='track-list-item'>
+                            <button on:click={() => {chooseFile('sfx')}}>
+                                +
+                            </button>
+                            Insert new track.
+                        </div>
                         {/if}
                     </div>
                 </div>
