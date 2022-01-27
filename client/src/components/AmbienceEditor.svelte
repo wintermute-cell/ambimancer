@@ -20,12 +20,6 @@
         loadAmbienceJson(ambience_name);
     };
 
-
-    // the corresponding checkboxes are bound to these.
-    // the binding is used to enable them to toggle each other.
-    let mus_crossfade_checkbox;
-    let mus_pause_checkbox;
-
     let current_ambience = null;
     function loadAmbienceJson(ambience_name) {
         fetch('./ambience/read?uid=dev_key&ambience_name=' + ambience_name)
@@ -36,6 +30,11 @@
                     })
             });
     }
+
+    // the corresponding checkboxes are bound to these.
+    // the binding is used to enable them to toggle each other.
+    let mus_crossfade_checkbox;
+    let mus_pause_checkbox;
 
     // sends a message about the change back to the server to apply to the json.
     async function writeAmbienceJson(target_string, new_val, to_disk = true) {
@@ -122,7 +121,6 @@
         let formData = new FormData();
         let files = e.target.files;
 
-
         formData.append('type', type);
         formData.append('room_uuid', room_uuid);
 
@@ -139,8 +137,29 @@
             body: formData
         }).then((response) => response.json()).then((result) => {
             console.log(result);
+            if (result.success == true) {
+                getFilenames(type);
+            }
         })
+    }
+    function fileSelectorSelect(filename, type) {
+        // TODO: Calculate chance, while length is calculated at
+        // server, as not displayed in frontend.
+        let new_ambience = {
+                'name': filename,
+                'volume': 0.5
+        };
+        if (type === 'music'){
+            current_ambience.music.tracks.push(new_ambience);
+        }
+        else if (type === 'sfx'){
+            current_ambience.sfx.layers[active_sfx_layer_idx].tracks.push(new_ambience);
+        }
+        // trigger svelte reactivity
+        current_ambience = current_ambience;
 
+        writeAmbienceJson(`add_track.${type}.${active_sfx_layer_idx}`,
+            new_ambience);
     }
 </script>
 
@@ -157,14 +176,18 @@
         <ul>
             {#if fileSelectorType === 'music'}
                 {#each filenamesMusic as filename}
-                    <div>
+                    <div class='fileselector-item'
+                         on:click={() => {fileSelectorSelect(filename, 'music')}}
+                         >
                         {filename}
                     </div>
                 {/each}
             {/if}
             {#if fileSelectorType === 'sfx'}
                 {#each filenamesSfx as filename}
-                    <div>
+                    <div class='fileselector-item'
+                         on:click={() => {fileSelectorSelect(filename, 'sfx')}}
+                         >
                         {filename}
                     </div>
                 {/each}
@@ -173,6 +196,7 @@
     </div>
     <div slot='footer'>
         <h3>Upload File</h3>
+        (Maximum 10MB)
         {#if fileSelectorType === 'music'}
         <input type="file"
                accept='.ogg, .mp3, .wav'
@@ -512,5 +536,15 @@
         border-radius: 4px;
         border-top-right-radius: 0px;
         border-bottom-right-radius: 0px;
+    }
+
+    .fileselector-item {
+        text-align: center;
+        display: flex;
+        padding: 0.5em 1em;
+        border-style: outset;
+        border-color: #EB8034;
+        border-radius: 4px;
+        margin: 0.5em;
     }
 </style>

@@ -5,6 +5,7 @@ from ..room_handler import room_uuid_to_uid
 import os
 from werkzeug.utils import secure_filename
 import subprocess
+import magic
 
 bp = Blueprint('audio', __name__)
 
@@ -37,6 +38,21 @@ def get_filenames():
     return {
         'names': names
     }
+
+
+def validate_filetype(file, extension):
+    mgc = magic.Magic(mime=True)
+    mime = mgc.from_file(file)
+    is_valid = False
+
+    if extension == '.ogg' and mime == 'video/ogg':
+        is_valid = True
+    elif extension == '.mp3' and mime == 'audio/mpeg':
+        is_valid = True
+    elif extension == '.wav' and mime == 'audio/x-wav':
+        is_valid = True
+
+    return is_valid
 
 
 @bp.route('/audio/upload', methods=['POST'])
@@ -75,10 +91,22 @@ def upload_audio():
                     'msg': 'invalid_filetype'
                 }
             else:
+                # save to file in original format
                 fpath = os.path.join(
                     ROOT_DIR,
-                    f'file/{uid}/audio/{audio_type}/{file_name}.{file_ext}')
+                    f'file/{uid}/audio/{audio_type}/{file_name}{file_ext}')
                 uploaded_file.save(fpath)
+
+                # validate the file for the given ext
+                is_valid = validate_filetype(fpath, file_ext)
+                if not is_valid:
+                    os.remove(fpath)
+                    return {
+                        'success': False,
+                        'msg': 'filetype_not_matching_ext'
+                    }
+
+                # convert file and delete original if necessary
                 if file_ext != '.ogg':
                     subprocess.run(
                         ['ffmpeg', '-i', fpath, fpath.split('.')[0]+'.ogg'])

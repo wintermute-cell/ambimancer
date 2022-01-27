@@ -3,6 +3,7 @@ from definitions import ROOT_DIR
 import os
 from threading import Lock
 import json
+from tinytag import TinyTag
 
 thread_lock = Lock()
 
@@ -74,6 +75,25 @@ def init(socketio):
                         ambi_obj['music']['tracks'][msg['new_val'][1]] =\
                         ambi_obj['music']['tracks'][msg['new_val'][1]],\
                         ambi_obj['music']['tracks'][msg['new_val'][0]],
+                # use add_track like:
+                # target_path = add_track.<music|sfx>.<[layer_idx]>
+                elif target_path[0] == 'add_track':
+                    track_json = msg['new_val']
+
+                    if target_path[1] == 'music':
+                        # retrieve track length
+                        tname = track_json['name']
+                        trckpath = os.path.join(
+                            ROOT_DIR,
+                            f'file/{uid}/audio/{target_path[1]}/{tname}.ogg')
+                        track_json['length'] = TinyTag.get(trckpath).duration
+
+                        ambi_obj['music']['tracks'].\
+                            append(track_json)
+                    elif target_path[1] == 'sfx':
+                        idx = int(target_path[2])
+                        ambi_obj['sfx']['layers'][idx]['tracks'].\
+                            append(track_json)
                 else:
                     ambi_obj = update_value(ambi_obj)
 
