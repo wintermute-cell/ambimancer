@@ -76,7 +76,7 @@
 
     // sfx editor
     let active_sfx_layer_idx = null;
-
+    let last_sfx_track_chance = -1;
 
     // file selection for new tracks
     let filenamesMusic = []
@@ -373,12 +373,12 @@
                                         on:change={(e) => {
                                         if(is_active){
                                         layer.volume = e.detail.value;
-                                        writeAmbienceJson(`sfx.layers.${layer.name}.volume`, e.detail.value, false);
+                                        writeAmbienceJson(`sfx.layers.${index}.volume`, e.detail.value, false);
                                         }
                                         }}
                                         on:stop={(e) => {
                                         sliding = false;
-                                        writeAmbienceJson(`sfx.layers.${layer.name}.volume`, e.detail.value);
+                                        writeAmbienceJson(`sfx.layers.${index}.volume`, e.detail.value);
                                         }}
                                         />
                                     <!-- TODO: Maybe add toggle to set interval to minutes instead of seconds-->
@@ -392,12 +392,12 @@
                                         on:change={(e) => {
                                         if(is_active){
                                         layer.interval = e.detail.values;
-                                        writeAmbienceJson(`sfx.layers.${layer.name}.interval`, e.detail.values, false);
+                                        writeAmbienceJson(`sfx.layers.${index}.interval`, e.detail.values, false);
                                         }
                                         }}
                                         on:stop={(e) => {
                                         sliding = false;
-                                        writeAmbienceJson(`sfx.layers.${layer.name}.interval`, e.detail.values);
+                                        writeAmbienceJson(`sfx.layers.${index}.interval`, e.detail.values);
                                         }}
                                         />
                                 </div>
@@ -425,12 +425,12 @@
                                         on:change={(e) => {
                                         if(is_active){
                                         track.volume = e.detail.value;
-                                        writeAmbienceJson(`sfx.layers.${current_ambience.sfx.layers[active_sfx_layer_idx].name}.tracks.${track.name}.volume`, e.detail.value, false);
+                                        writeAmbienceJson(`sfx.layers.${active_sfx_layer_idx}.tracks.${index}.volume`, e.detail.value, false);
                                         }
                                         }}
                                         on:stop={(e) => {
                                         sliding = false;
-                                        writeAmbienceJson(`sfx.layers.${current_ambience.sfx.layers[active_sfx_layer_idx].name}.tracks.${track.name}.volume`, e.detail.value);
+                                        writeAmbienceJson(`sfx.layers.${active_sfx_layer_idx}.tracks.${index}.volume`, e.detail.value);
                                         }}
                                         />
                                 </div>
@@ -439,7 +439,7 @@
                                         C
                                     </div>
                                     <RangeSlider
-                                        id="volume-slider"
+                                        id="chance-slider"
                                         values={[track.chance]}
                                         min={0} max={1} float step={0.05}
                                         springValues={{stiffness:0.3, damping:1}}
@@ -448,13 +448,18 @@
                                         }}
                                         on:change={(e) => {
                                         if(is_active){
+                                        let chance_difference = e.detail.value - last_sfx_track_chance;
+                                        let chance_cutoff = chance_difference / (current_ambience.sfx.layers[active_sfx_layer_idx].tracks.length - 1)
+                                        for (const track of current_ambience.sfx.layers[active_sfx_layer_idx].tracks) {
+                                            track.chance -= chance_cutoff;
+                                        }
                                         track.chance = e.detail.value;
-                                        writeAmbienceJson(`sfx.layers.${current_ambience.sfx.layers[active_sfx_layer_idx].name}.tracks.${track.name}.chance`, e.detail.value, false);
+                                        writeAmbienceJson(`sfx.layers.${active_sfx_layer_idx}.tracks.${index}.chance`, e.detail.value, false);
                                         }
                                         }}
                                         on:stop={(e) => {
                                         sliding = false;
-                                        writeAmbienceJson(`sfx.layers.${current_ambience.sfx.layers[active_sfx_layer_idx].name}.tracks.${track.name}.chance`, e.detail.value);
+                                        writeAmbienceJson(`sfx.layers.${active_sfx_layer_idx}.tracks.${index}.chance`, e.detail.value);
                                         }}
                                         />
                                 </div>
