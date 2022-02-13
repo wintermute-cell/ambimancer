@@ -53,7 +53,6 @@ def update_value(ambience_object, target_path, new_value):
     # recursive function to find and replace the correct value
     # according to the target_path
     def inner_update_value(obj, step_idx=0):
-        print(obj)
         for key, val in obj.copy().items():
             if target_path[step_idx] == key:
                 # if key == 'tracks' or key == 'layers':

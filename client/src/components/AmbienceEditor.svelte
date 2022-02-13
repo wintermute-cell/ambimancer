@@ -6,7 +6,7 @@
 
     export let socket;
     export let ambience_name = '';
-    export let is_active;
+    export let is_active; // describes if the edited ambience is currently playing.
 
     let uid;
     let room_uuid;
@@ -76,7 +76,48 @@
 
     // sfx editor
     let active_sfx_layer_idx = null;
-    let last_sfx_track_chance = -1;
+    let chanceSliderValues = [];
+    let currentSlidingIndex = -1; // the idx of the chance slider the user is currently interacting with, used to prevent the below function from setting that sliders value
+    $: {
+        if(active_sfx_layer_idx != null && current_ambience != null){
+            let i = 0;
+            for (i = 0; i < chanceSliderValues.length; i++) {
+                if(!(typeof current_ambience.sfx.layers[active_sfx_layer_idx].tracks[i] === 'undefined')){
+                    if(i == currentSlidingIndex){
+                        continue;
+                    }
+                    chanceSliderValues[i] = [
+                        current_ambience.sfx.
+                        layers[active_sfx_layer_idx].
+                        tracks[i].chance
+                    ];
+                }
+            }
+            // fill one slot more with a 0 value, this prevents erroring
+            // when a new track is eventually inserted an tries to lookup this slot.
+            chanceSliderValues[i+1] = [0];
+        }
+    }
+    // This function shifts the chances of all tracks in a layer when one of them
+    // changes, or is inserted as a new one (ergo, changes from 0->x).
+    // It then returns the chance of the changed track back.
+    function recalcChances(new_chance, track_idx=null){
+        let curr_tracks = current_ambience.sfx.layers[active_sfx_layer_idx].tracks;
+
+        // percentage that the other tracks, beside the changed one,
+        // took, summed together, before and after the change.
+        let old_perc = track_idx != null ? 1 - curr_tracks[track_idx].chance : 1;
+        let new_perc = 1 - new_chance;
+
+        // percentages of the other tracks.
+        for (let i = 0; i < curr_tracks.length; i++) {
+            let old_percentage = curr_tracks[i].chance/old_perc;
+            current_ambience.sfx.layers[active_sfx_layer_idx].tracks[i].chance =
+                new_perc * old_percentage;
+        }
+
+        return new_chance;
+    }
 
     // file selection for new tracks
     let filenamesMusic = []
@@ -143,23 +184,24 @@
         })
     }
     function fileSelectorSelect(filename, type) {
-        // TODO: Calculate chance, while length is calculated at
-        // server, as not displayed in frontend.
-        let new_ambience = {
+        let new_track = {
                 'name': filename,
                 'volume': 0.5
         };
         if (type === 'music'){
-            current_ambience.music.tracks.push(new_ambience);
+            current_ambience.music.tracks.push(new_track);
         }
         else if (type === 'sfx'){
-            current_ambience.sfx.layers[active_sfx_layer_idx].tracks.push(new_ambience);
+            let curr_tracks = current_ambience.sfx.layers[active_sfx_layer_idx].tracks;
+            let new_chance = 1 / (curr_tracks.length + 1);
+            new_track.chance = recalcChances(new_chance);
+            current_ambience.sfx.layers[active_sfx_layer_idx].tracks.push(new_track);
         }
         // trigger svelte reactivity
         current_ambience = current_ambience;
 
         writeAmbienceJson(`add_track.${type}.${active_sfx_layer_idx}`,
-            new_ambience);
+            new_track);
     }
 </script>
 
@@ -359,6 +401,7 @@
                         {#each current_ambience.sfx.layers as layer, index}
                             <div class='sfx-layer-list-item'
                                  on:click|self={(e) => {
+                                     chanceSliderValues = [];
                                      active_sfx_layer_idx = index;
                                  }}
                                  >
@@ -440,25 +483,22 @@
                                     </div>
                                     <RangeSlider
                                         id="chance-slider"
-                                        values={[track.chance]}
-                                        min={0} max={1} float step={0.05}
+                                        bind:values={chanceSliderValues[index]}
+                                        min={0.05} max={0.95} float step={0.05}
                                         springValues={{stiffness:0.3, damping:1}}
                                         on:start={() => {
                                         sliding = true;
                                         }}
                                         on:change={(e) => {
+                                        currentSlidingIndex = index;
+                                        track.chance = recalcChances(e.detail.value, index);
                                         if(is_active){
-                                        let chance_difference = e.detail.value - last_sfx_track_chance;
-                                        let chance_cutoff = chance_difference / (current_ambience.sfx.layers[active_sfx_layer_idx].tracks.length - 1)
-                                        for (const track of current_ambience.sfx.layers[active_sfx_layer_idx].tracks) {
-                                            track.chance -= chance_cutoff;
-                                        }
-                                        track.chance = e.detail.value;
                                         writeAmbienceJson(`sfx.layers.${active_sfx_layer_idx}.tracks.${index}.chance`, e.detail.value, false);
                                         }
                                         }}
                                         on:stop={(e) => {
                                         sliding = false;
+                                        currentSlidingIndex = -1;
                                         writeAmbienceJson(`sfx.layers.${active_sfx_layer_idx}.tracks.${index}.chance`, e.detail.value);
                                         }}
                                         />

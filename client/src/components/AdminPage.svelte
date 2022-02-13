@@ -146,6 +146,10 @@
              {/each}
          </div>
     </div>
+
+    <!--
+    EDITOR PANEL
+    -->
     <div class="grid-item" id="panel_editor">
         <div class="grid-container-title">Editor</div>
         <AmbienceEditor socket={socket}
