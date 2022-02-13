@@ -8,45 +8,35 @@ from tinytag import TinyTag
 thread_lock = Lock()
 
 
-# recalculates all the track chances, expecting 1 new track.
-# returns the chance of the new track.
-def recalc_chances(ambience_object, layer_idx):
+# This function shifts the chances of all tracks in a layer when one of them
+# changes, or is inserted as a new one (ergo, changes from 0->x).
+# It then returns the chance of the changed track back, and does NOT change
+# the chance value of the actually modified track.
+def recalc_chances(ambience_object,
+                   layer_idx,
+                   track_idx=None,
+                   new_chance=None):
     existing_tracks =\
         [track for track in
          ambience_object['sfx']['layers'][layer_idx]['tracks']]
-    curr_chances = [track['chance'] for track in existing_tracks]
 
-    # calculate the chance for the new track
-    new_chance = 1 / (len(curr_chances)+1)
-    new_chance_inv = 1 - new_chance
+    # percentage that the other tracks, beside the changed one,
+    # took, summed together, before and after the change.
+    old_perc = 0
+    if track_idx is None:
+        old_perc = 1
+        new_chance = 1/(len(existing_tracks)+1)
+    else:
+        old_perc = 1 - existing_tracks[track_idx]['chance']
+    new_perc = 1 - new_chance
 
-    # recalculate and reassign all existing chances
-    new_chances = [chance*(new_chance_inv) for chance in curr_chances]
-    for idx, chance in enumerate(new_chances):
-        existing_tracks[idx]['chance'] = chance
-    ambience_object['sfx']['layers'][layer_idx]['tracks'] = existing_tracks
+    # percentages of the other tracks.
+    for idx in range(len(existing_tracks)):
+        old_percentage = existing_tracks[idx]['chance']/old_perc
+        ambience_object['sfx']['layers'][layer_idx]['tracks'][idx]['chance'] =\
+            new_perc * old_percentage
 
     return new_chance
-
-
-# if the edit contains changes to an sfx chance
-# all other sfx tracks have to be adjusted.
-def cutoff_chances(ambience_object, lr_idx, tr_idx, new_chance):
-    chance_difference =\
-        new_chance -\
-        (ambience_object['sfx']['layers'][lr_idx]
-         ['tracks'][tr_idx]['chance'])
-
-    chance_cutoff =\
-        chance_difference /\
-        (len(ambience_object['sfx']['layers']
-             [lr_idx]['tracks'])-1)
-
-    for idx in range(
-        len(ambience_object['sfx']['layers']
-            [lr_idx]['tracks'])):
-        ambience_object['sfx']['layers'][lr_idx]['tracks'][idx]['chance'] -=\
-            chance_cutoff
 
 
 def update_value(ambience_object, target_path, new_value):
@@ -120,18 +110,18 @@ def write_edit_to_file(file_path, uid, target_path, msg):
             elif target_path[1] == 'sfx':
                 # TODO: Calculate chance for this track and
                 # update all tracks accordingly
-                idx = int(target_path[2])
-                new_chance = recalc_chances(ambi_obj, idx)
+                layer_idx = int(target_path[2])
+                new_chance = recalc_chances(ambi_obj, layer_idx)
                 track_json['chance'] = new_chance
 
-                ambi_obj['sfx']['layers'][idx]['tracks'].\
+                ambi_obj['sfx']['layers'][layer_idx]['tracks'].\
                     append(track_json)
 
         # THEN, HANDLE THE NORMAL UPDATE #
         else:
             # additional case: modifying sfx chance
             if target_path[-1] == 'chance':
-                cutoff_chances(
+                recalc_chances(
                     ambi_obj,
                     int(target_path[2]),
                     int(target_path[4]),
