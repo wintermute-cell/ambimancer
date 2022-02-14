@@ -4,6 +4,7 @@ import json
 import threading
 from time import perf_counter
 import random
+import copy
 
 ambience_managers = {}
 
@@ -129,6 +130,7 @@ class SfxLayer():
         if self.cooldown <= 0:
             self.refresh_cooldown()
             track = self.get_next_track()
+            track = copy.deepcopy(track)  # copy, to not to modify original
             track.volume *= self.volume
             return track
         return None
@@ -137,6 +139,7 @@ class SfxLayer():
         self.cooldown = random.randrange(self.interval[0], self.interval[1])
 
     def get_next_track(self):
+        print(list(range(0, len(self.tracks))), [track.chance for track in self.tracks])
         idx = random.choices(
             population=list(range(0, len(self.tracks))),
             weights=[track.chance for track in self.tracks],
@@ -152,6 +155,7 @@ class Sfx():
         self.volume = volume
         self.layers = []
         for layer in layers:
+            print(layer['tracks'])
             self.layers.append(SfxLayer(
                 layer['name'],
                 layer['volume'],
@@ -165,10 +169,11 @@ class Sfx():
     def tick(self):
         sfx_list = []
         for layer in self.layers:
-            track = layer.tick()
-            if track is not None:  # (not every tick returns a track.)
-                track.volume *= self.volume
-                sfx_list.append(track)
+            if len(layer.tracks) > 0:
+                track = layer.tick()
+                if track is not None:  # (not every tick returns a track.)
+                    track.volume *= self.volume
+                    sfx_list.append(track)
         return sfx_list
 
 

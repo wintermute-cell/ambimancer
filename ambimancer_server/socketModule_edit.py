@@ -72,6 +72,17 @@ def update_value(ambience_object, target_path, new_value):
     return inner_update_value(ambience_object)
 
 
+def handle_special_case_rm(ambience_object, target_path):
+    type = target_path[1]  # sfx or music
+    if type == 'music':
+        track_idx = int(target_path[2])
+        del ambience_object['music']['tracks'][track_idx]
+    elif type == 'sfx':
+        layer_idx = int(target_path[2])
+        track_idx = int(target_path[3])
+        del ambience_object['sfx']['layers'][layer_idx]['tracks'][track_idx]
+
+
 def write_edit_to_file(file_path, uid, target_path, msg):
     # thread lock the file access to make sure only one thread at
     # a time is writing to the file, and no thread reads
@@ -116,6 +127,9 @@ def write_edit_to_file(file_path, uid, target_path, msg):
 
                 ambi_obj['sfx']['layers'][layer_idx]['tracks'].\
                     append(track_json)
+
+        elif target_path[0] == 'rm':
+            handle_special_case_rm(ambi_obj, target_path)
 
         # THEN, HANDLE THE NORMAL UPDATE #
         else:

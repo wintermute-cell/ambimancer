@@ -88,6 +88,10 @@
                 }
             this.ambiences[ambience_name]['sfx'][name] = file;
             file.addEventListener('ended', () => {
+                // This prevents an error if the ambience is removed
+                // from the 'actives' list before all sounds finish.
+                if (typeof this.ambiences[ambience_name] == 'undefined') return;
+
                 delete this.ambiences[ambience_name]['sfx'][name];
                 this.cleanUp(ambience_name);
             })
@@ -125,6 +129,10 @@
     socket.on('ambicall_sfx', (data) => {
         console.log('SFX: ' + data['name'] + ' ' + data['volume']);
         let audFile = sfxBuffer.tryAdd(data['name'])
+        // check if the file is already playing, if so, play a copy.
+        if (audFile.paused || audFile.ended || audFile.currentTime < 0) {
+            audFile = audFile.cloneNode();
+        }
         audFile.volume = data['volume'];
         currently_playing_audio.addSfx(audFile, data['name'], data['ambience_name']);
         audFile.play();

@@ -109,7 +109,8 @@ def upload_audio():
                 # convert file and delete original if necessary
                 if file_ext != '.ogg':
                     subprocess.run(
-                        ['ffmpeg', '-i', fpath, fpath.split('.')[0]+'.ogg'])
+                        ['ffmpeg', '-y', '-i', fpath,
+                         fpath.split('.')[0]+'.ogg'])
                     os.remove(fpath)
                 return {
                     'success': True,

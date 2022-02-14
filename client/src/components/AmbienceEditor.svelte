@@ -74,6 +74,22 @@
         event.dataTransfer.setData('text/plain', start);
     }
 
+    // REMOVING TRACKS AND LAYERS FROM THE CURRENT AMBIENCE
+    // removing music tracks
+    function rm_music_track(index) {
+        current_ambience.music.tracks.splice(index, 1);
+        current_ambience = current_ambience // trigger reactivity
+        writeAmbienceJson(`rm.music.${index}`, '');
+    }
+    // removing sfx tracks
+    function rm_sfx_track(track_index, layer_index) {
+        current_ambience.sfx.layers[layer_index].tracks.splice(track_index, 1);
+        current_ambience = current_ambience // trigger reactivity
+        writeAmbienceJson(`rm.sfx.${layer_index}.${track_index}`, '');
+    }
+    // removing sfx layers
+
+
     // sfx editor
     let active_sfx_layer_idx = null;
     let chanceSliderValues = [];
@@ -303,6 +319,9 @@
                                             }}
                                             />
                                     </div>
+                                    <button on:click={() => {rm_music_track(index)}}>
+                                        X
+                                    </button>
                                 </div>
                             {/each}
                             <div class='track-list-item'>
@@ -503,6 +522,11 @@
                                         }}
                                         />
                                 </div>
+                                <button on:click={() => {
+                                        rm_sfx_track(index, active_sfx_layer_idx)
+                                        }}>
+                                    X
+                                </button>
                             </div>
                         {/each}
                         <div class='track-list-item'>
