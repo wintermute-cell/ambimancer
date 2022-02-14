@@ -83,6 +83,7 @@
     }
     // removing sfx tracks
     function rm_sfx_track(track_index, layer_index) {
+        recalcChances(0, track_index);
         current_ambience.sfx.layers[layer_index].tracks.splice(track_index, 1);
         current_ambience = current_ambience // trigger reactivity
         writeAmbienceJson(`rm.sfx.${layer_index}.${track_index}`, '');
@@ -115,7 +116,8 @@
         }
     }
     // This function shifts the chances of all tracks in a layer when one of them
-    // changes, or is inserted as a new one (ergo, changes from 0->x).
+    // changes, or is inserted as a new one, by not setting 'track_idx' (ergo,
+    // changes from 0->x).
     // It then returns the chance of the changed track back.
     function recalcChances(new_chance, track_idx=null){
         let curr_tracks = current_ambience.sfx.layers[active_sfx_layer_idx].tracks;
@@ -130,6 +132,7 @@
             let old_percentage = curr_tracks[i].chance/old_perc;
             current_ambience.sfx.layers[active_sfx_layer_idx].tracks[i].chance =
                 new_perc * old_percentage;
+            console.log(new_perc * old_percentage);
         }
 
         return new_chance;
@@ -300,6 +303,8 @@
                                     </button>
                                     <div class="track-list-item-slider">
                                         <RangeSlider
+                                            pips all='label'
+                                            slider
                                             id="volume-slider"
                                             values={[track.volume]}
                                             min={0} max={1} float step={0.05}
@@ -310,16 +315,19 @@
                                             on:change={(e) => {
                                                 if(is_active){
                                                     track.volume = e.detail.value;
-                                                    writeAmbienceJson(`music.tracks.${track.name}.volume`, e.detail.value, false);
+                                                    writeAmbienceJson(`music.tracks.${index}.volume`, e.detail.value, false);
                                             }
                                             }}
                                             on:stop={(e) => {
                                                 sliding = false;
-                                                writeAmbienceJson(`music.tracks.${track.name}.volume`, e.detail.value);
+                                                writeAmbienceJson(`music.tracks.${index}.volume`, e.detail.value);
                                             }}
                                             />
                                     </div>
-                                    <button on:click={() => {rm_music_track(index)}}>
+                                    <button
+                                        class='remove-button'
+                                        on:click={() => {rm_music_track(index)}}
+                                        >
                                         X
                                     </button>
                                 </div>
@@ -336,6 +344,8 @@
                     <div class="grid-item" id="music-panel-settings">
                         <label class="settings-label" for="g-music-vol">General Volume
                             <RangeSlider
+                                pips all='label'
+                                slider
                                 id="g-music-vol"
                                 values={[current_ambience.music.volume]}
                                 min={0} max={1} float step={0.05}
@@ -426,8 +436,10 @@
                                  >
                                 {index}
                                 <input type="text" placeholder={layer.name}>
-                                <div class="sfx-layer-list-item-slider" >
+                                <div class="sfx-layer-list-item-slider slider-selected-label" >
                                     <RangeSlider
+                                        pips all='label'
+                                        slider
                                         id="sfx-layer-vol"
                                         values={[layer.volume]}
                                         min={0} max={1} float step={0.05}
@@ -445,6 +457,8 @@
                                         />
                                     <!-- TODO: Maybe add toggle to set interval to minutes instead of seconds-->
                                     <RangeSlider
+                                        pips all='label'
+                                        slider
                                         id="sfx-layer-interval"
                                         values={layer.interval}
                                         range
@@ -480,6 +494,8 @@
                                         V
                                     </div>
                                     <RangeSlider
+                                        pips all='label'
+                                        slider
                                         id="volume-slider"
                                         values={[track.volume]}
                                         min={0} max={1} float step={0.05}
@@ -496,11 +512,14 @@
                                         }}
                                         />
                                 </div>
-                                <div class="track-list-item-slider">
+                                <div class="track-list-item-slider general-slider"
+                                     class:hidden="{current_ambience.sfx.layers[active_sfx_layer_idx].tracks.length === 1}">
                                     <div>
                                         C
                                     </div>
                                     <RangeSlider
+                                        pips all='label'
+                                        slider
                                         id="chance-slider"
                                         bind:values={chanceSliderValues[index]}
                                         min={0.05} max={0.95} float step={0.05}
@@ -522,9 +541,12 @@
                                         }}
                                         />
                                 </div>
-                                <button on:click={() => {
-                                        rm_sfx_track(index, active_sfx_layer_idx)
-                                        }}>
+                                <button
+                                    class='remove-button'
+                                    on:click={() => {
+                                    rm_sfx_track(index, active_sfx_layer_idx)
+                                    }}
+                                    >
                                     X
                                 </button>
                             </div>
@@ -547,6 +569,16 @@
     .main-container {
         margin: 1em;
         margin-top: 2.5em;
+    }
+
+    :global(.rangePips .pip .pipVal) {
+        color: rgba(0, 0, 0, 0);
+    }
+    :global(.rangePips .selected .pipVal) {
+        color: rgba(0, 0, 0, 1);
+    }
+    .hidden {
+        display: none;
     }
 
     .music-grid-container {

@@ -79,6 +79,7 @@ class Music():
     def set_current_track(self, idx):
         # loop around at the end. (and regenerate the shuffle list)
         if idx >= self.num_tracks:
+            print('looping music playlist!')
             idx = 0
             if self.shuffle == 1:
                 self.shuffle_list = random.sample(
@@ -139,7 +140,6 @@ class SfxLayer():
         self.cooldown = random.randrange(self.interval[0], self.interval[1])
 
     def get_next_track(self):
-        print(list(range(0, len(self.tracks))), [track.chance for track in self.tracks])
         idx = random.choices(
             population=list(range(0, len(self.tracks))),
             weights=[track.chance for track in self.tracks],

@@ -32,7 +32,11 @@ def recalc_chances(ambience_object,
 
     # percentages of the other tracks.
     for idx in range(len(existing_tracks)):
-        old_percentage = existing_tracks[idx]['chance']/old_perc
+        if old_perc != 0:
+            old_percentage = existing_tracks[idx]['chance']/old_perc
+        else:
+            old_percentage = 1
+
         ambience_object['sfx']['layers'][layer_idx]['tracks'][idx]['chance'] =\
             new_perc * old_percentage
 
