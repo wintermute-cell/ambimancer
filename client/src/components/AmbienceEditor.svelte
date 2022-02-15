@@ -224,7 +224,8 @@
     }
 </script>
 
-<Modal bind:isOpen={fileselectorOpen}>
+<Modal
+    bind:isOpen={fileselectorOpen}>
     <div slot='header'>
         {#if fileSelectorType === 'music'}
             <h3>Choose a Music Track</h3>
