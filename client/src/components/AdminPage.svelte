@@ -107,18 +107,18 @@
          class:hovering="{hovering === 'active'}"
          >
          <div class="grid-container-title">Active Ambiences</div>
-         <ul class="ambience-list">
+         <div class="ambience-list">
              {#each containers['active'] as item,i}
-                 <li draggable={true}
+                 <div draggable={true}
                      on:dragstart={event => dragstart(event, 'active', i)}
                      on:click={select_ambience}
                      id={item.name}
                      class="ambience-list-item active-ambience"
                      >
                      {item.name}, {item.active}
-                 </li>
+                 </div>
              {/each}
-         </ul>
+         </div>
     </div>
 
     <!--
@@ -166,17 +166,26 @@
 -->
 
 <style>
-    .ambience-list-item {
-        display: block;
+     .ambience-list-item {
+        background-color: #926B48;
+        border: outset 3px lightgray;
+        border-radius: 16px;
+        box-shadow: 6px 6px 16px rgba(0,0,0,0.46), inset 0 0 12px rgba(0,0,0,0.5);
+        padding: 1.2em;
+        margin: 1em;
+        font-family: 'Open Sans';
+        font-weight: bold;
+        color: white;
         width: 4em;
         height: 4em;
-        border: 2px solid;
-        border-radius: 16px;
-        border-color: #A78440;
-        margin: 1em;
-        background-color: #CA9064;
-        text-align: center;
-        box-shadow: 6px 6px 16px black;;
+    }
+    .ambience-list-item:hover {
+        background-color: #a37750;
+    }
+    .ambience-list-item:active {
+        color: #ebebeb;
+        background-color: #876241;
+        box-shadow: 3px 3px 10px rgba(0,0,0,0.46), inset 0 0 12px rgba(0,0,0,0.5);
     }
     .ambience-list {
         width: 100%;
