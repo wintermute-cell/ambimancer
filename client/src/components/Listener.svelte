@@ -143,5 +143,3 @@
     }
 
 </script>
-
-Hellow, I'm the listener!

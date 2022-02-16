@@ -98,7 +98,7 @@
     <!--
     ACTIVE AMBIENCES PANEL
     -->
-    <div class="grid-item"
+    <div class="grid-item style-background"
          id="panel_active"
          on:drop|preventDefault={event => drop(event, 'active')}
          ondragover="return false"
@@ -124,7 +124,7 @@
     <!--
     INACTIVE AMBIENCES PANEL
     -->
-    <div class="grid-item"
+    <div class="grid-item style-background"
          id="panel_all"
          on:drop|preventDefault={event => drop(event, 'all')}
          ondragover="return false"
@@ -150,7 +150,7 @@
     <!--
     EDITOR PANEL
     -->
-    <div class="grid-item" id="panel_editor">
+    <div class="grid-item style-background" id="panel_editor">
         <div class="grid-container-title">Editor</div>
         <AmbienceEditor socket={socket}
                         ambience_name={selected_ambience}
@@ -171,14 +171,19 @@
         width: 4em;
         height: 4em;
         border: 2px solid;
+        border-radius: 16px;
+        border-color: #A78440;
         margin: 1em;
+        background-color: #CA9064;
+        text-align: center;
+        box-shadow: 6px 6px 16px black;;
     }
     .ambience-list {
         width: 100%;
         display: flex;
         flex-wrap: wrap;
         margin: 0px;
-        margin-top: 1.5em;
+        margin-top: 2.2em;
         padding: 0px;
     }
     .grid-container {
@@ -190,26 +195,49 @@
             grid-template-rows: auto 40%;
             grid-template-columns: 20em auto;
             grid-gap: 10px;
-            background-color: #eb8034;
+            background-color: #A78440;
             padding: 10px;
             box-sizing: border-box;
     }
     .grid-container > div {
-        background-color: #e8a16f;
         overflow: auto;
+        scrollbar-width: none; /* Disable scrollbar on firefox */
+        -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    }
+    .grid-container > div::-webkit-scrollbar {
+        display: none;  /* Safari and Chrome */
     }
     .grid-container-title {
+        font-family: 'Open Sans';
+        font-weight: bold;
         text-align: left;
         vertical-align: top;
         font-size: 1em;
         position: fixed;
-        background-color: #eb8034;
-        padding: 4px;
+        background-color: #A78440;
+        padding: 0.6em;
+        padding-top: 0.2em;
+        box-shadow: 10px 10px 16px -6px rgba(1, 1, 1, 0.6);
+    }
+    .grid-item {
+        border-radius: 30px;
+        box-shadow: inset 0 0 16px rgba(1, 1, 1, 0.6);
     }
     #panel_active {
         grid-area: active;
     }
     #panel_all {
         grid-area: all;
+    }
+
+    @media only screen and (max-width: 800px), (max-height: 620px) {
+        .grid-container {
+            grid-template-areas:
+                'active active'
+                'all all';
+        }
+        #panel_editor {
+            display: none;
+        }
     }
 </style>

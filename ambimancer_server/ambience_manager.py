@@ -155,7 +155,6 @@ class Sfx():
         self.volume = volume
         self.layers = []
         for layer in layers:
-            print(layer['tracks'])
             self.layers.append(SfxLayer(
                 layer['name'],
                 layer['volume'],
