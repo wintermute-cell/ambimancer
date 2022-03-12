@@ -1,5 +1,10 @@
 from flask import Flask
-from os import getenv
+from os import getenv, makedirs
+
+
+def init_filesys():
+    user_file_path = 'file/'
+    makedirs(user_file_path, exist_ok=False)
 
 
 def create_app():
@@ -7,6 +12,8 @@ def create_app():
 
     CONFIG_TYPE = getenv('CONFIG_TYPE', default='config.DevelopmentConfig')
     server.config.from_object(CONFIG_TYPE)
+
+    init_filesys()
 
     from ambimancer_server.models import db
     db.init_app(server)

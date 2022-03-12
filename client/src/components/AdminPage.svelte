@@ -47,6 +47,9 @@
     getAmbienceNames();
     console.log(containers)
 
+    function createNewAmbience() {
+
+    }
 
     // music track drag and drop
     function dragstart(event, container_name, item_idx) {
@@ -133,6 +136,9 @@
          class:hovering="{hovering === 'all'}"
          >
          <div class="grid-container-title">All Ambiences</div>
+         <div class="grid-container-buttons">
+             <button onclick={() => {createNewAmbience()}}>+</button>
+         </div>
          <div class="ambience-list">
              {#each containers['all'] as item,i}
                  <div draggable={true}
@@ -226,6 +232,26 @@
         background-color: #A78440;
         padding: 0.6em;
         padding-top: 0.2em;
+        box-shadow: 10px 10px 16px -6px rgba(1, 1, 1, 0.6);
+    }
+    .grid-container-buttons {
+        margin-left: 10em;
+        height: 1.8em;
+        font-family: 'Open Sans';
+        font-weight: bold;
+        text-align: left;
+        vertical-align: top;
+        font-size: 1em;
+        position: fixed;
+        background-color: #A78440;
+        box-shadow: 10px 10px 16px -6px rgba(1, 1, 1, 0.6);
+    }
+    .grid-container-buttons button {
+        color: white;
+        font-size: 1em;
+        width: 2em;
+        border: none;
+        background-color: #A78440;
         box-shadow: 10px 10px 16px -6px rgba(1, 1, 1, 0.6);
     }
     .grid-item {
