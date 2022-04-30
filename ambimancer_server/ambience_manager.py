@@ -1,5 +1,6 @@
 from definitions import ROOT_DIR, EMITTER_TICK
 import os
+from os import makedirs
 import json
 import threading
 from time import perf_counter
@@ -188,14 +189,14 @@ class AmbienceManager():
     # room_uuid is used for direction the socket
     # emits to a particular socketio room.
     # uid is used to identify the location of the admin users persistant files.
-    def __init__(self, room_uuid, uid):
+    def __init__(self, room_uuid, uid:str):
         self.isPlaying = False
         self.current_ambiences = []
         self.room_uuid = room_uuid
         self.uid = uid
 
-    # loads the file NAME.json into an ambience.
-    def ambience_load(self, name):
+    def ambience_load(self, name:str):
+        """Loads the file NAME.json into an ambience."""
         fpath = os.path.join(ROOT_DIR, f'file/{self.uid}/ambience/{name}.json')
         with open(fpath) as file:
             ambi_data = json.load(file)
@@ -235,6 +236,8 @@ class AmbienceManager():
         ambience_names = [f.split('.')[0] for f in ls]
         return ambience_names
 
+    # one instance of this function runs in its own thread for each
+    # active ambience_manager
     def ambience_emitter(self, *args):
         socketio = args[0]
         deltatime = 0
@@ -242,7 +245,6 @@ class AmbienceManager():
             # one loop every second
             socketio.sleep(EMITTER_TICK - deltatime)
             if(self.isPlaying):
-                print('tick!')
                 begintime = perf_counter()
 
                 # go through each of the currently active ambiences.
@@ -320,21 +322,42 @@ class AmbienceManager():
                 current_step = current_step.__dict__[next_step]
 
 
+def init_new_admin(uid: str) -> None:
+    """ creates a new directory structure for the user, if it didn't yet exist.
+
+        this function runs once when a new room is created, also
+        creating a new directory structure for the user,
+        if it didn't yet exist.
+
+        Parameters
+        ---
+        uid : str
+            The unique identifier belonging to the user.
+    """
+    ambience_path = os.path.join(ROOT_DIR, f'file/{uid}/ambience/')
+    makedirs(ambience_path, exist_ok=True)
+    return
+
+
 # runs a new AmbienceManager for the given uid
 def run_new_instance(socketio, room_uuid, uid):
     global ambience_managers
 
+    # an ambience manager already exists, so nothing needs to be done
+    # here. the client will just be handed the old manager when trying
+    # to connect.
     if uid in ambience_managers:
         print(f'An ambience manager already exists for uid {uid}!')
         return
 
-    print(f'Running new ambience manager for uid {uid} and\
+    print(f'Starting a new ambience manager for uid {uid} and\
           room_uuid {room_uuid}.')
 
-    thread_lock = threading.Lock()
+    init_new_admin(uid)
     ambi_manager = AmbienceManager(room_uuid, uid)
     ambience_managers[uid] = ambi_manager
 
+    thread_lock = threading.Lock()
     with thread_lock:
         socketio.\
             start_background_task(

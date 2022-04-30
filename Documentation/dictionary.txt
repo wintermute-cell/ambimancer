@@ -1,0 +1,2 @@
+> uid
+    The unique identifier of a user. This id is usually known to the user, being initially just the license key, or the 'dev_key' special keyword.

@@ -4,7 +4,7 @@ from os import getenv, makedirs
 
 def init_filesys():
     user_file_path = 'file/'
-    makedirs(user_file_path, exist_ok=False)
+    makedirs(user_file_path, exist_ok=True)
 
 
 def create_app():
